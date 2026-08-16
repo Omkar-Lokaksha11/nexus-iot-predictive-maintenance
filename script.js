@@ -1,15 +1,14 @@
 // ==========================================
-// NEXUS - INTELLIGENT MACHINE MONITORING
-// LIVE SENSOR GRAPH
+// NEXUS - INTELLIGENT IoT PREDICTIVE
+// MAINTENANCE DASHBOARD
 // ==========================================
 
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", () => {
 
-    console.log("NEXUS system initialized.");
-
+    console.log("NEXUS System Initialized");
 
     // ==========================================
-    // ELEMENTS
+    // DOM ELEMENTS
     // ==========================================
 
     const launchButton =
@@ -41,152 +40,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // ==========================================
-    // LAUNCH BUTTON
+    // MACHINE DATA
     // ==========================================
 
-    if (launchButton && monitoringSection) {
+    let temperature = 42;
 
-        launchButton.addEventListener(
-            "click",
-            function () {
-
-                monitoringSection.scrollIntoView({
-                    behavior: "smooth"
-                });
-
-            }
-        );
-
-    }
-
-
-    // ==========================================
-    // SYSTEM STATUS
-    // ==========================================
-
-    if (statusDot) {
-
-        setInterval(function () {
-
-            statusDot.style.opacity =
-                statusDot.style.opacity === "0.3"
-                    ? "1"
-                    : "0.3";
-
-        }, 800);
-
-    }
-
-
-    // ==========================================
-    // SENSOR HOVER
-    // ==========================================
-
-    sensors.forEach(function (sensor) {
-
-        sensor.addEventListener(
-            "mouseenter",
-            function () {
-
-                sensor.style.transform =
-                    "scale(1.08)";
-
-            }
-        );
-
-
-        sensor.addEventListener(
-            "mouseleave",
-            function () {
-
-                sensor.style.transform =
-                    "scale(1)";
-
-            }
-        );
-
-    });
-
-
-    // ==========================================
-    // MACHINE CORE
-    // ==========================================
-
-    if (machineCore) {
-
-        machineCore.addEventListener(
-            "click",
-            function () {
-
-                machineCore.style.transform =
-                    "scale(1.15)";
-
-                setTimeout(function () {
-
-                    machineCore.style.transform =
-                        "scale(1)";
-
-                }, 300);
-
-            }
-        );
-
-    }
-
-
-    // ==========================================
-    // SCROLL REVEAL
-    // ==========================================
-
-    const cards =
-        document.querySelectorAll(
-            ".stat-card, .flow-card"
-        );
-
-
-    if ("IntersectionObserver" in window) {
-
-        const observer =
-            new IntersectionObserver(
-                function (entries) {
-
-                    entries.forEach(function (entry) {
-
-                        if (entry.isIntersecting) {
-
-                            entry.target.classList.add(
-                                "visible"
-                            );
-
-                        }
-
-                    });
-
-                },
-                {
-                    threshold: 0.15
-                }
-            );
-
-
-        cards.forEach(function (card) {
-
-            observer.observe(card);
-
-        });
-
-    }
-
-
-    // ==========================================
-    // MACHINE VARIABLES
-    // ==========================================
-
-    let temperature = 42.0;
-
-    let vibration = 1.80;
+    let vibration = 1.8;
 
     let rpm = 1450;
+
+
+    // ==========================================
+    // DATA SOURCE
+    // ==========================================
+
+    let dataSource = "simulation";
 
 
     // ==========================================
@@ -214,10 +82,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // ==========================================
 
     const canvas =
-        document.getElementById(
-            "sensorGraph"
-        );
-
+        document.getElementById("sensorGraph");
 
     const ctx =
         canvas
@@ -226,51 +91,144 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // ==========================================
-    // GRAPH RESIZE
+    // LAUNCH MONITORING
     // ==========================================
 
-    function resizeGraph() {
+    if (launchButton && monitoringSection) {
 
-        if (!canvas) {
-            return;
-        }
+        launchButton.addEventListener(
+            "click",
+            () => {
 
+                monitoringSection.scrollIntoView({
+                    behavior: "smooth"
+                });
 
-        const rect =
-            canvas.getBoundingClientRect();
-
-
-        const dpr =
-            window.devicePixelRatio || 1;
-
-
-        canvas.width =
-            rect.width * dpr;
-
-
-        canvas.height =
-            rect.height * dpr;
-
-
-        ctx.setTransform(
-            dpr,
-            0,
-            0,
-            dpr,
-            0,
-            0
+            }
         );
-
-
-        drawGraph();
 
     }
 
 
-    window.addEventListener(
-        "resize",
-        resizeGraph
-    );
+    // ==========================================
+    // SYSTEM STATUS BLINK
+    // ==========================================
+
+    if (statusDot) {
+
+        setInterval(() => {
+
+            statusDot.style.opacity =
+                statusDot.style.opacity === "0.3"
+                    ? "1"
+                    : "0.3";
+
+        }, 800);
+
+    }
+
+
+    // ==========================================
+    // SENSOR HOVER
+    // ==========================================
+
+    sensors.forEach(sensor => {
+
+        sensor.addEventListener(
+            "mouseenter",
+            () => {
+
+                sensor.style.transform =
+                    "scale(1.08)";
+
+            }
+        );
+
+
+        sensor.addEventListener(
+            "mouseleave",
+            () => {
+
+                sensor.style.transform =
+                    "scale(1)";
+
+            }
+        );
+
+    });
+
+
+    // ==========================================
+    // MACHINE CORE
+    // ==========================================
+
+    if (machineCore) {
+
+        machineCore.addEventListener(
+            "click",
+            () => {
+
+                machineCore.style.transform =
+                    "scale(1.15)";
+
+
+                setTimeout(() => {
+
+                    machineCore.style.transform =
+                        "scale(1)";
+
+                }, 300);
+
+            }
+        );
+
+    }
+
+
+    // ==========================================
+    // SCROLL ANIMATION
+    // ==========================================
+
+    const cards =
+        document.querySelectorAll(
+            ".stat-card, .flow-card"
+        );
+
+
+    if ("IntersectionObserver" in window) {
+
+        const observer =
+            new IntersectionObserver(
+                entries => {
+
+                    entries.forEach(entry => {
+
+                        if (
+                            entry.isIntersecting
+                        ) {
+
+                            entry.target.classList.add(
+                                "visible"
+                            );
+
+                        }
+
+                    });
+
+                },
+                {
+                    threshold: 0.15
+                }
+            );
+
+
+        cards.forEach(card => {
+
+            observer.observe(card);
+
+        });
+
+    }
 
 
     // ==========================================
@@ -278,64 +236,74 @@ document.addEventListener("DOMContentLoaded", function () {
     // ==========================================
 
     function calculateHealth(
-        temperature,
-        vibration,
-        rpm
+        temp,
+        vib,
+        motorRpm
     ) {
 
         let health = 100;
 
 
-        if (temperature > 45) {
+        // Temperature
+
+        if (temp > 45) {
 
             health -=
-                (temperature - 45) * 4;
+                (temp - 45) * 4;
 
         }
 
 
-        if (temperature > 50) {
+        if (temp > 50) {
 
             health -= 10;
 
         }
 
 
-        if (vibration > 2.2) {
+        // Vibration
+
+        if (vib > 2.2) {
 
             health -=
-                (vibration - 2.2) * 18;
+                (vib - 2.2) * 18;
 
         }
 
 
-        if (vibration > 3.0) {
+        if (vib > 3.0) {
 
             health -= 12;
 
         }
 
 
-        if (rpm > 1550) {
+        // RPM
+
+        if (motorRpm > 1550) {
 
             health -=
-                (rpm - 1550) / 20;
+                (motorRpm - 1550) / 20;
 
         }
 
 
-        if (rpm < 1350) {
+        if (motorRpm < 1350) {
 
             health -=
-                (1350 - rpm) / 20;
+                (1350 - motorRpm) / 20;
 
         }
 
 
-        health = Math.max(
-            0,
-            Math.min(100, health)
-        );
+        health =
+            Math.max(
+                0,
+                Math.min(
+                    100,
+                    health
+                )
+            );
 
 
         return Math.round(health);
@@ -344,7 +312,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // ==========================================
-    // STATUS
+    // MACHINE STATUS
     // ==========================================
 
     function getMachineStatus(health) {
@@ -378,45 +346,45 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // ==========================================
-    // ALERT
+    // MACHINE ALERT
     // ==========================================
 
     function showMachineAlert(status) {
 
-        let alertMessage = "";
+        const oldAlert =
+            document.querySelector(
+                ".machine-alert"
+            );
+
+
+        if (oldAlert) {
+
+            oldAlert.remove();
+
+        }
+
+
+        let message;
 
 
         if (status === "critical") {
 
-            alertMessage =
+            message =
                 "Machine failure risk detected.";
 
         }
 
         else if (status === "warning") {
 
-            alertMessage =
+            message =
                 "Abnormal machine condition detected.";
 
         }
 
         else {
 
-            alertMessage =
+            message =
                 "Machine operating normally.";
-
-        }
-
-
-        const existingAlert =
-            document.querySelector(
-                ".machine-alert"
-            );
-
-
-        if (existingAlert) {
-
-            existingAlert.remove();
 
         }
 
@@ -429,39 +397,22 @@ document.addEventListener("DOMContentLoaded", function () {
             "machine-alert " + status;
 
 
-        let icon = "●";
-
-
-        if (
-            status === "warning" ||
-            status === "critical"
-        ) {
-
-            icon = "⚠";
-
-        }
-
-
         alert.innerHTML = `
 
             <div class="alert-icon">
 
-                ${icon}
+                ${status === "optimal" ? "●" : "⚠"}
 
             </div>
 
             <div class="alert-content">
 
                 <strong>
-
                     ${status.toUpperCase()}
-
                 </strong>
 
                 <span>
-
-                    ${alertMessage}
-
+                    ${message}
                 </span>
 
             </div>
@@ -474,13 +425,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (status === "optimal") {
 
-            setTimeout(function () {
+            setTimeout(() => {
 
-                if (alert) {
-
-                    alert.remove();
-
-                }
+                alert.remove();
 
             }, 2000);
 
@@ -490,7 +437,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // ==========================================
-    // UPDATE GRAPH HISTORY
+    // HISTORY
     // ==========================================
 
     function updateHistory() {
@@ -541,25 +488,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // ==========================================
-    // GRAPH NORMALIZATION
-    // ==========================================
-
-    function normalize(
-        value,
-        min,
-        max
-    ) {
-
-        return (
-            (value - min) /
-            (max - min)
-        );
-
-    }
-
-
-    // ==========================================
-    // DRAW GRAPH
+    // GRAPH
     // ==========================================
 
     function drawGraph() {
@@ -586,12 +515,7 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
 
-        // ======================================
-        // GRID
-        // ======================================
-
-        ctx.lineWidth = 1;
-
+        // Horizontal grid
 
         for (
             let i = 0;
@@ -620,17 +544,18 @@ document.addEventListener("DOMContentLoaded", function () {
                 y
             );
 
+
             ctx.strokeStyle =
                 "rgba(255,255,255,0.07)";
+
+            ctx.lineWidth = 1;
 
             ctx.stroke();
 
         }
 
 
-        // ======================================
-        // VERTICAL GRID
-        // ======================================
+        // Vertical grid
 
         for (
             let i = 0;
@@ -639,9 +564,7 @@ document.addEventListener("DOMContentLoaded", function () {
         ) {
 
             const x =
-                width *
-                i /
-                10;
+                width * i / 10;
 
 
             ctx.beginPath();
@@ -656,6 +579,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 height
             );
 
+
             ctx.strokeStyle =
                 "rgba(255,255,255,0.04)";
 
@@ -664,15 +588,11 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
 
-        // ======================================
-        // DRAW LINE FUNCTION
-        // ======================================
-
         function drawLine(
             data,
             min,
             max,
-            lineColor
+            color
         ) {
 
             if (data.length < 2) {
@@ -686,7 +606,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
             data.forEach(
-                function (value, index) {
+                (value, index) => {
 
                     const x =
                         (
@@ -697,11 +617,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
                     const normalized =
-                        normalize(
-                            value,
-                            min,
-                            max
-                        );
+                        (
+                            value - min
+                        ) /
+                        (max - min);
 
 
                     const y =
@@ -735,8 +654,7 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
 
-            ctx.strokeStyle =
-                lineColor;
+            ctx.strokeStyle = color;
 
             ctx.lineWidth = 2;
 
@@ -749,10 +667,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
 
-        // ======================================
-        // TEMPERATURE
-        // ======================================
-
         drawLine(
             temperatureHistory,
             35,
@@ -761,10 +675,6 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
 
-        // ======================================
-        // VIBRATION
-        // ======================================
-
         drawLine(
             vibrationHistory,
             1,
@@ -772,10 +682,6 @@ document.addEventListener("DOMContentLoaded", function () {
             "#ffd166"
         );
 
-
-        // ======================================
-        // RPM
-        // ======================================
 
         drawLine(
             rpmHistory,
@@ -788,73 +694,134 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // ==========================================
-    // MACHINE DATA UPDATE
+    // GRAPH RESIZE
     // ==========================================
 
-    function updateMachineData() {
+    function resizeGraph() {
 
+        if (!canvas) {
 
-        // ======================================
-        // NORMAL
-        // ======================================
-
-        if (simulationMode === "normal") {
-
-            temperature +=
-                (Math.random() - 0.5) * 1.2;
-
-            vibration +=
-                (Math.random() - 0.5) * 0.2;
-
-            rpm +=
-                (Math.random() - 0.5) * 50;
+            return;
 
         }
 
 
-        // ======================================
-        // WARNING
-        // ======================================
+        const rect =
+            canvas.getBoundingClientRect();
 
-        else if (
-            simulationMode === "warning"
+
+        const dpr =
+            window.devicePixelRatio || 1;
+
+
+        canvas.width =
+            rect.width * dpr;
+
+        canvas.height =
+            rect.height * dpr;
+
+
+        ctx.setTransform(
+            dpr,
+            0,
+            0,
+            dpr,
+            0,
+            0
+        );
+
+
+        drawGraph();
+
+    }
+
+
+    window.addEventListener(
+        "resize",
+        resizeGraph
+    );
+
+
+    // ==========================================
+    // SIMULATION
+    // ==========================================
+
+    function generateSimulationData() {
+
+        if (
+            simulationMode ===
+            "normal"
         ) {
 
             temperature +=
-                (48 - temperature) * 0.25;
+                (
+                    Math.random() - 0.5
+                ) * 1.2;
+
 
             vibration +=
-                (2.7 - vibration) * 0.25;
+                (
+                    Math.random() - 0.5
+                ) * 0.2;
+
 
             rpm +=
-                (1570 - rpm) * 0.25;
+                (
+                    Math.random() - 0.5
+                ) * 50;
 
         }
 
 
-        // ======================================
-        // CRITICAL
-        // ======================================
-
         else if (
-            simulationMode === "critical"
+            simulationMode ===
+            "warning"
         ) {
 
             temperature +=
-                (54 - temperature) * 0.25;
+                (
+                    48 - temperature
+                ) * 0.25;
+
 
             vibration +=
-                (3.4 - vibration) * 0.25;
+                (
+                    2.7 - vibration
+                ) * 0.25;
+
 
             rpm +=
-                (1600 - rpm) * 0.25;
+                (
+                    1570 - rpm
+                ) * 0.25;
 
         }
 
 
-        // ======================================
-        // LIMIT VALUES
-        // ======================================
+        else if (
+            simulationMode ===
+            "critical"
+        ) {
+
+            temperature +=
+                (
+                    54 - temperature
+                ) * 0.25;
+
+
+            vibration +=
+                (
+                    3.4 - vibration
+                ) * 0.25;
+
+
+            rpm +=
+                (
+                    1600 - rpm
+                ) * 0.25;
+
+        }
+
 
         temperature =
             Math.max(
@@ -885,10 +852,88 @@ document.addEventListener("DOMContentLoaded", function () {
                 )
             );
 
+    }
 
-        // ======================================
-        // HEALTH
-        // ======================================
+
+    // ==========================================
+    // IoT API
+    // ==========================================
+
+    async function getIoTData() {
+
+        try {
+
+            const response =
+                await fetch(
+                    "http://localhost:3000/api/sensors"
+                );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Sensor API connection failed"
+                );
+
+            }
+
+
+            const data =
+                await response.json();
+
+
+            temperature =
+                data.temperature;
+
+
+            vibration =
+                data.vibration;
+
+
+            rpm =
+                data.rpm;
+
+
+            console.log(
+                "IoT DATA:",
+                data
+            );
+
+        }
+
+        catch (error) {
+
+            console.error(
+                "IoT connection error:",
+                error
+            );
+
+        }
+
+    }
+
+
+    // ==========================================
+    // UPDATE DASHBOARD
+    // ==========================================
+
+    async function updateMachineData() {
+
+        if (
+            dataSource ===
+            "simulation"
+        ) {
+
+            generateSimulationData();
+
+        }
+
+        else {
+
+            await getIoTData();
+
+        }
+
 
         const health =
             calculateHealth(
@@ -904,18 +949,7 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
 
-        // ======================================
-        // ALERT
-        // ======================================
-
-        showMachineAlert(
-            status.level
-        );
-
-
-        // ======================================
-        // VALUES
-        // ======================================
+        // Update values
 
         if (healthValue) {
 
@@ -949,9 +983,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
 
-        // ======================================
-        // STATUS TEXT
-        // ======================================
+        // Status
 
         const statusElements =
             document.querySelectorAll(
@@ -959,10 +991,13 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
 
-        if (statusElements.length >= 4) {
+        if (
+            statusElements.length >= 4
+        ) {
 
             statusElements[0].textContent =
-                "● " + status.text;
+                "● " +
+                status.text;
 
 
             statusElements[1].textContent =
@@ -978,49 +1013,163 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
             statusElements[3].textContent =
-                rpm > 1550 ||
-                rpm < 1350
+                (
+                    rpm > 1550 ||
+                    rpm < 1350
+                )
                     ? "● ABNORMAL"
                     : "● RUNNING";
 
         }
 
 
-        // ======================================
-        // GRAPH
-        // ======================================
+        // Graph
 
         updateHistory();
 
         drawGraph();
 
 
-        // ======================================
-        // CONSOLE
-        // ======================================
-
         console.log(
-            "NEXUS LIVE DATA",
+            "NEXUS:",
             {
-                mode:
-                    simulationMode,
-
-                temperature:
-                    temperature.toFixed(1),
-
-                vibration:
-                    vibration.toFixed(2),
-
-                rpm:
-                    Math.round(rpm),
-
-                health:
-                    health,
-
-                status:
-                    status.text
+                source: dataSource,
+                temperature,
+                vibration,
+                rpm,
+                health,
+                status: status.text
             }
         );
+
+
+        // Alert
+
+        showMachineAlert(
+            status.level
+        );
+
+    }
+
+
+    // ==========================================
+    // DATA SOURCE PANEL
+    // ==========================================
+
+    function createDataSourcePanel() {
+
+        const panel =
+            document.createElement(
+                "div"
+            );
+
+
+        panel.className =
+            "nexus-data-source";
+
+
+        panel.innerHTML = `
+
+            <div class="data-source-title">
+                DATA SOURCE
+            </div>
+
+
+            <div class="data-source-status">
+
+                <span
+                    class="data-source-dot">
+                </span>
+
+                <span id="dataSourceText">
+                    SIMULATION
+                </span>
+
+            </div>
+
+
+            <div class="data-source-buttons">
+
+                <button
+                    class="source-button active"
+                    data-source="simulation">
+
+                    SIMULATION
+
+                </button>
+
+
+                <button
+                    class="source-button"
+                    data-source="iot">
+
+                    IoT DEVICE
+
+                </button>
+
+            </div>
+
+        `;
+
+
+        document.body.appendChild(
+            panel
+        );
+
+
+        const buttons =
+            panel.querySelectorAll(
+                ".source-button"
+            );
+
+
+        const sourceText =
+            panel.querySelector(
+                "#dataSourceText"
+            );
+
+
+        buttons.forEach(button => {
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    dataSource =
+                        button.dataset.source;
+
+
+                    buttons.forEach(
+                        btn => {
+
+                            btn.classList.remove(
+                                "active"
+                            );
+
+                        }
+                    );
+
+
+                    button.classList.add(
+                        "active"
+                    );
+
+
+                    sourceText.textContent =
+                        dataSource === "simulation"
+                            ? "SIMULATION"
+                            : "IoT DEVICE";
+
+
+                    console.log(
+                        "Data source:",
+                        dataSource
+                    );
+
+                }
+            );
+
+        });
 
     }
 
@@ -1044,16 +1193,12 @@ document.addEventListener("DOMContentLoaded", function () {
         panel.innerHTML = `
 
             <div class="control-title">
-
                 NEXUS CONTROL
-
             </div>
 
 
             <div class="control-subtitle">
-
                 MACHINE SIMULATION
-
             </div>
 
 
@@ -1101,64 +1246,54 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
 
-        buttons.forEach(
-            function (button) {
+        buttons.forEach(button => {
 
-                button.addEventListener(
-                    "click",
-                    function () {
+            button.addEventListener(
+                "click",
+                () => {
 
-                        simulationMode =
-                            button.dataset.mode;
-
-
-                        buttons.forEach(
-                            function (btn) {
-
-                                btn.classList.remove(
-                                    "active"
-                                );
-
-                            }
-                        );
+                    simulationMode =
+                        button.dataset.mode;
 
 
-                        button.classList.add(
-                            "active"
-                        );
+                    buttons.forEach(
+                        btn => {
+
+                            btn.classList.remove(
+                                "active"
+                            );
+
+                        }
+                    );
 
 
-                        console.log(
-                            "Simulation mode:",
-                            simulationMode
-                        );
+                    button.classList.add(
+                        "active"
+                    );
 
-                    }
-                );
 
-            }
-        );
+                    console.log(
+                        "Simulation mode:",
+                        simulationMode
+                    );
+
+                }
+            );
+
+        });
 
     }
 
 
     // ==========================================
-    // INITIAL GRAPH
+    // INITIALIZATION
     // ==========================================
 
     resizeGraph();
 
-
-    // ==========================================
-    // CONTROL PANEL
-    // ==========================================
+    createDataSourcePanel();
 
     createControlPanel();
-
-
-    // ==========================================
-    // INITIAL DATA
-    // ==========================================
 
     updateMachineData();
 
@@ -1171,6 +1306,5 @@ document.addEventListener("DOMContentLoaded", function () {
         updateMachineData,
         2000
     );
-
 
 });
