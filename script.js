@@ -1,14 +1,13 @@
 // ==========================================
-// NEXUS - MACHINE INTELLIGENCE SYSTEM
+// NEXUS - INTELLIGENT MACHINE MONITORING
 // ==========================================
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", function () {
 
     console.log("NEXUS system initialized.");
 
-
     // ==========================================
-    // ELEMENTS
+    // GET HTML ELEMENTS
     // ==========================================
 
     const launchButton =
@@ -32,20 +31,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const statusDot =
         document.querySelector(".status-dot");
 
-    const sensors =
-        document.querySelectorAll(".sensor");
-
     const machineCore =
         document.querySelector(".machine-core");
 
+    const sensors =
+        document.querySelectorAll(".sensor");
+
 
     // ==========================================
-    // LAUNCH MONITORING
+    // MONITORING BUTTON
     // ==========================================
 
     if (launchButton && monitoringSection) {
 
-        launchButton.addEventListener("click", () => {
+        launchButton.addEventListener("click", function () {
 
             monitoringSection.scrollIntoView({
                 behavior: "smooth"
@@ -57,17 +56,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // ==========================================
-    // SYSTEM STATUS BLINK
+    // SYSTEM ONLINE INDICATOR
     // ==========================================
 
     if (statusDot) {
 
-        setInterval(() => {
+        setInterval(function () {
 
-            statusDot.style.opacity =
-                statusDot.style.opacity === "0.3"
-                    ? "1"
-                    : "0.3";
+            if (statusDot.style.opacity === "0.3") {
+
+                statusDot.style.opacity = "1";
+
+            } else {
+
+                statusDot.style.opacity = "0.3";
+
+            }
 
         }, 800);
 
@@ -78,43 +82,54 @@ document.addEventListener("DOMContentLoaded", () => {
     // SENSOR HOVER
     // ==========================================
 
-    sensors.forEach((sensor) => {
+    sensors.forEach(function (sensor) {
 
-        sensor.addEventListener("mouseenter", () => {
+        sensor.addEventListener(
+            "mouseenter",
+            function () {
 
-            sensor.style.transform = "scale(1.08)";
+                sensor.style.transform =
+                    "scale(1.08)";
 
-        });
+            }
+        );
 
 
-        sensor.addEventListener("mouseleave", () => {
+        sensor.addEventListener(
+            "mouseleave",
+            function () {
 
-            sensor.style.transform = "scale(1)";
+                sensor.style.transform =
+                    "scale(1)";
 
-        });
+            }
+        );
 
     });
 
 
     // ==========================================
-    // MACHINE CORE INTERACTION
+    // MACHINE CORE
     // ==========================================
 
     if (machineCore) {
 
-        machineCore.addEventListener("click", () => {
-
-            machineCore.style.transform =
-                "scale(1.15)";
-
-            setTimeout(() => {
+        machineCore.addEventListener(
+            "click",
+            function () {
 
                 machineCore.style.transform =
-                    "scale(1)";
+                    "scale(1.15)";
 
-            }, 300);
+                setTimeout(function () {
 
-        });
+                    machineCore.style.transform =
+                        "scale(1)";
+
+                }, 300);
+
+            }
+        );
 
     }
 
@@ -123,65 +138,365 @@ document.addEventListener("DOMContentLoaded", () => {
     // SCROLL REVEAL
     // ==========================================
 
-    const cards = document.querySelectorAll(
-        ".stat-card, .flow-card"
-    );
+    const cards =
+        document.querySelectorAll(
+            ".stat-card, .flow-card"
+        );
 
 
-    const observer = new IntersectionObserver(
-        (entries) => {
+    if ("IntersectionObserver" in window) {
 
-            entries.forEach((entry) => {
+        const observer =
+            new IntersectionObserver(
+                function (entries) {
 
-                if (entry.isIntersecting) {
+                    entries.forEach(function (entry) {
 
-                    entry.target.classList.add("visible");
+                        if (entry.isIntersecting) {
 
+                            entry.target.classList.add(
+                                "visible"
+                            );
+
+                        }
+
+                    });
+
+                },
+                {
+                    threshold: 0.15
                 }
-
-            });
-
-        },
-        {
-            threshold: 0.15
-        }
-    );
+            );
 
 
-    cards.forEach((card) => {
+        cards.forEach(function (card) {
 
-        observer.observe(card);
+            observer.observe(card);
 
-    });
+        });
+
+    }
 
 
     // ==========================================
-    // LIVE MACHINE DATA SIMULATION
+    // MACHINE VARIABLES
     // ==========================================
 
-    let temperature = 42;
-    let vibration = 1.8;
+    let temperature = 42.0;
+
+    let vibration = 1.80;
+
     let rpm = 1450;
 
 
+    // ==========================================
+    // MACHINE HEALTH CALCULATION
+    // ==========================================
+
+    function calculateHealth(
+        temperature,
+        vibration,
+        rpm
+    ) {
+
+        let health = 100;
+
+
+        // ------------------------------
+        // TEMPERATURE EFFECT
+        // ------------------------------
+
+        if (temperature > 45) {
+
+            health -=
+                (temperature - 45) * 4;
+
+        }
+
+
+        if (temperature > 50) {
+
+            health -= 10;
+
+        }
+
+
+        // ------------------------------
+        // VIBRATION EFFECT
+        // ------------------------------
+
+        if (vibration > 2.2) {
+
+            health -=
+                (vibration - 2.2) * 18;
+
+        }
+
+
+        if (vibration > 3.0) {
+
+            health -= 12;
+
+        }
+
+
+        // ------------------------------
+        // RPM EFFECT
+        // ------------------------------
+
+        if (rpm > 1550) {
+
+            health -=
+                (rpm - 1550) / 20;
+
+        }
+
+
+        if (rpm < 1350) {
+
+            health -=
+                (1350 - rpm) / 20;
+
+        }
+
+
+        // ------------------------------
+        // LIMIT HEALTH
+        // ------------------------------
+
+        health = Math.max(
+            0,
+            Math.min(100, health)
+        );
+
+
+        return Math.round(health);
+
+    }
+
+
+    // ==========================================
+    // MACHINE STATUS
+    // ==========================================
+
+    function getMachineStatus(health) {
+
+        if (health >= 80) {
+
+            return {
+                text: "OPTIMAL",
+                level: "optimal"
+            };
+
+        }
+
+
+        if (health >= 60) {
+
+            return {
+                text: "WARNING",
+                level: "warning"
+            };
+
+        }
+
+
+        return {
+            text: "CRITICAL",
+            level: "critical"
+        };
+
+    }
+
+
+    // ==========================================
+    // MACHINE ALERT SYSTEM
+    // ==========================================
+
+    function showMachineAlert(
+        status,
+        temperature,
+        vibration,
+        rpm
+    ) {
+
+        let alertMessage = "";
+
+
+        // --------------------------------------
+        // CRITICAL
+        // --------------------------------------
+
+        if (status === "critical") {
+
+            alertMessage =
+                "Machine failure risk detected.";
+
+        }
+
+
+        // --------------------------------------
+        // WARNING
+        // --------------------------------------
+
+        else if (status === "warning") {
+
+            alertMessage =
+                "Abnormal machine condition detected.";
+
+        }
+
+
+        // --------------------------------------
+        // OPTIMAL
+        // --------------------------------------
+
+        else {
+
+            alertMessage =
+                "Machine operating normally.";
+
+        }
+
+
+        // --------------------------------------
+        // REMOVE OLD ALERT
+        // --------------------------------------
+
+        const existingAlert =
+            document.querySelector(
+                ".machine-alert"
+            );
+
+
+        if (existingAlert) {
+
+            existingAlert.remove();
+
+        }
+
+
+        // --------------------------------------
+        // CREATE ALERT
+        // --------------------------------------
+
+        const alert =
+            document.createElement("div");
+
+
+        alert.className =
+            "machine-alert " + status;
+
+
+        // --------------------------------------
+        // ALERT ICON
+        // --------------------------------------
+
+        let icon = "●";
+
+
+        if (status === "warning") {
+
+            icon = "⚠";
+
+        }
+
+
+        if (status === "critical") {
+
+            icon = "⚠";
+
+        }
+
+
+        // --------------------------------------
+        // ALERT CONTENT
+        // --------------------------------------
+
+        alert.innerHTML = `
+
+            <div class="alert-icon">
+
+                ${icon}
+
+            </div>
+
+
+            <div class="alert-content">
+
+                <strong>
+
+                    ${status.toUpperCase()}
+
+                </strong>
+
+
+                <span>
+
+                    ${alertMessage}
+
+                </span>
+
+            </div>
+
+        `;
+
+
+        // --------------------------------------
+        // ADD TO PAGE
+        // --------------------------------------
+
+        document.body.appendChild(alert);
+
+
+        // --------------------------------------
+        // NORMAL ALERT AUTO REMOVE
+        // --------------------------------------
+
+        if (status === "optimal") {
+
+            setTimeout(function () {
+
+                if (alert) {
+
+                    alert.remove();
+
+                }
+
+            }, 2000);
+
+        }
+
+    }
+
+
+    // ==========================================
+    // UPDATE MACHINE DATA
+    // ==========================================
+
     function updateMachineData() {
 
-        // Temperature variation
+
+        // --------------------------------------
+        // SENSOR SIMULATION
+        // --------------------------------------
+
         temperature +=
-            (Math.random() - 0.5) * 1.2;
+            (Math.random() - 0.5) * 2;
 
 
-        // Vibration variation
         vibration +=
-            (Math.random() - 0.5) * 0.25;
+            (Math.random() - 0.5) * 0.4;
 
 
-        // RPM variation
         rpm +=
-            (Math.random() - 0.5) * 30;
+            (Math.random() - 0.5) * 80;
 
 
-        // Keep values within realistic demo range
+        // --------------------------------------
+        // KEEP VALUES IN RANGE
+        // --------------------------------------
+
         temperature = Math.max(
             35,
             Math.min(55, temperature)
@@ -200,48 +515,41 @@ document.addEventListener("DOMContentLoaded", () => {
         );
 
 
-        // ======================================
-        // MACHINE HEALTH CALCULATION
-        // ======================================
+        // --------------------------------------
+        // CALCULATE HEALTH
+        // --------------------------------------
 
-        let health = 100;
-
-
-        // Temperature penalty
-        if (temperature > 45) {
-
-            health -=
-                (temperature - 45) * 2;
-
-        }
+        const health =
+            calculateHealth(
+                temperature,
+                vibration,
+                rpm
+            );
 
 
-        // Vibration penalty
-        if (vibration > 2.2) {
+        // --------------------------------------
+        // GET MACHINE STATUS
+        // --------------------------------------
 
-            health -=
-                (vibration - 2.2) * 12;
-
-        }
-
-
-        // RPM penalty
-        if (rpm > 1550 || rpm < 1350) {
-
-            health -= 5;
-
-        }
+        const status =
+            getMachineStatus(health);
 
 
-        health = Math.max(
-            0,
-            Math.min(100, health)
+        // --------------------------------------
+        // SHOW ALERT
+        // --------------------------------------
+
+        showMachineAlert(
+            status.level,
+            temperature,
+            vibration,
+            rpm
         );
 
 
-        // ======================================
-        // UPDATE UI
-        // ======================================
+        // --------------------------------------
+        // UPDATE TEMPERATURE
+        // --------------------------------------
 
         if (temperatureValue) {
 
@@ -251,6 +559,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
 
+        // --------------------------------------
+        // UPDATE VIBRATION
+        // --------------------------------------
+
         if (vibrationValue) {
 
             vibrationValue.textContent =
@@ -258,6 +570,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         }
 
+
+        // --------------------------------------
+        // UPDATE RPM
+        // --------------------------------------
 
         if (rpmValue) {
 
@@ -267,21 +583,103 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
 
+        // --------------------------------------
+        // UPDATE HEALTH
+        // --------------------------------------
+
         if (healthValue) {
 
             healthValue.textContent =
-                Math.round(health);
+                health;
 
         }
+
+
+        // --------------------------------------
+        // UPDATE STATUS TEXT
+        // --------------------------------------
+
+        const statusElements =
+            document.querySelectorAll(
+                ".stat-status"
+            );
+
+
+        if (statusElements.length >= 4) {
+
+
+            // Machine Health
+
+            statusElements[0].textContent =
+                "● " + status.text;
+
+
+            // Temperature
+
+            statusElements[1].textContent =
+                temperature > 48
+                    ? "● HIGH"
+                    : "● NORMAL";
+
+
+            // Vibration
+
+            statusElements[2].textContent =
+                vibration > 2.5
+                    ? "● HIGH"
+                    : "● STABLE";
+
+
+            // RPM
+
+            statusElements[3].textContent =
+                rpm > 1550 ||
+                rpm < 1350
+                    ? "● ABNORMAL"
+                    : "● RUNNING";
+
+        }
+
+
+        // --------------------------------------
+        // CONSOLE DATA
+        // --------------------------------------
+
+        console.log(
+            "NEXUS LIVE DATA",
+            {
+                temperature:
+                    temperature.toFixed(1)
+                    + " °C",
+
+                vibration:
+                    vibration.toFixed(2)
+                    + " mm/s",
+
+                rpm:
+                    Math.round(rpm),
+
+                health:
+                    health + "%",
+
+                status:
+                    status.text
+            }
+        );
 
     }
 
 
     // ==========================================
-    // START LIVE DATA
+    // INITIAL DATA UPDATE
     // ==========================================
 
     updateMachineData();
+
+
+    // ==========================================
+    // UPDATE EVERY 2 SECONDS
+    // ==========================================
 
     setInterval(
         updateMachineData,
