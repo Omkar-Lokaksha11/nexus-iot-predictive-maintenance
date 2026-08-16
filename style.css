@@ -797,3 +797,279 @@ footer {
     opacity: 1;
     transform: translateY(0);
 }
+
+/* ==========================================
+   NEXUS MACHINE ALERT
+========================================== */
+
+.machine-alert {
+
+    position: fixed;
+
+    top: 90px;
+
+    right: 30px;
+
+    width: 340px;
+
+    min-height: 75px;
+
+    padding: 16px 18px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+
+    z-index: 9999;
+
+    border: 1px solid rgba(255, 255, 255, 0.12);
+
+    border-radius: 14px;
+
+    background: rgba(10, 15, 25, 0.92);
+
+    backdrop-filter: blur(18px);
+
+    -webkit-backdrop-filter: blur(18px);
+
+    box-shadow:
+        0 15px 40px rgba(0, 0, 0, 0.35);
+
+    animation:
+        nexusAlertIn 0.45s ease forwards;
+
+}
+
+
+/* ==========================================
+   ALERT ICON
+========================================== */
+
+.alert-icon {
+
+    width: 42px;
+
+    height: 42px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 50%;
+
+    font-size: 18px;
+
+    flex-shrink: 0;
+
+}
+
+
+/* ==========================================
+   ALERT CONTENT
+========================================== */
+
+.alert-content {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 5px;
+
+}
+
+
+.alert-content strong {
+
+    font-size: 13px;
+
+    letter-spacing: 1.5px;
+
+}
+
+
+.alert-content span {
+
+    font-size: 12px;
+
+    opacity: 0.7;
+
+    line-height: 1.4;
+
+}
+
+
+/* ==========================================
+   OPTIMAL
+========================================== */
+
+.machine-alert.optimal {
+
+    border-color:
+        rgba(80, 220, 150, 0.35);
+
+    box-shadow:
+        0 15px 40px rgba(0, 0, 0, 0.35),
+        0 0 25px rgba(80, 220, 150, 0.08);
+
+}
+
+
+.machine-alert.optimal .alert-icon {
+
+    background:
+        rgba(80, 220, 150, 0.12);
+
+}
+
+
+/* ==========================================
+   WARNING
+========================================== */
+
+.machine-alert.warning {
+
+    border-color:
+        rgba(255, 190, 60, 0.45);
+
+    box-shadow:
+        0 15px 40px rgba(0, 0, 0, 0.35),
+        0 0 30px rgba(255, 190, 60, 0.12);
+
+}
+
+
+.machine-alert.warning .alert-icon {
+
+    background:
+        rgba(255, 190, 60, 0.14);
+
+    animation:
+        warningPulse 1.2s infinite;
+
+}
+
+
+/* ==========================================
+   CRITICAL
+========================================== */
+
+.machine-alert.critical {
+
+    border-color:
+        rgba(255, 80, 90, 0.55);
+
+    box-shadow:
+        0 15px 40px rgba(0, 0, 0, 0.35),
+        0 0 35px rgba(255, 80, 90, 0.18);
+
+}
+
+
+.machine-alert.critical .alert-icon {
+
+    background:
+        rgba(255, 80, 90, 0.14);
+
+    animation:
+        criticalPulse 0.8s infinite;
+
+}
+
+
+/* ==========================================
+   ENTRY ANIMATION
+========================================== */
+
+@keyframes nexusAlertIn {
+
+    from {
+
+        opacity: 0;
+
+        transform:
+            translateX(40px)
+            scale(0.95);
+
+    }
+
+    to {
+
+        opacity: 1;
+
+        transform:
+            translateX(0)
+            scale(1);
+
+    }
+
+}
+
+
+/* ==========================================
+   WARNING PULSE
+========================================== */
+
+@keyframes warningPulse {
+
+    0%,
+    100% {
+
+        transform: scale(1);
+
+    }
+
+    50% {
+
+        transform: scale(1.12);
+
+    }
+
+}
+
+
+/* ==========================================
+   CRITICAL PULSE
+========================================== */
+
+@keyframes criticalPulse {
+
+    0%,
+    100% {
+
+        transform: scale(1);
+
+    }
+
+    50% {
+
+        transform: scale(1.18);
+
+    }
+
+}
+
+
+/* ==========================================
+   MOBILE
+========================================== */
+
+@media (max-width: 600px) {
+
+    .machine-alert {
+
+        top: 75px;
+
+        right: 15px;
+
+        left: 15px;
+
+        width: auto;
+
+    }
+
+}
