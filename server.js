@@ -1,159 +1,199 @@
 const http = require("http");
+const fs = require("fs");
+const path = require("path");
 
 const PORT = 3000;
+const ROOT = __dirname;
 
 function generateSensorData() {
-
-    const temperature =
-        40 + Math.random() * 8;
-
-    const vibration =
-        1.4 + Math.random() * 1.2;
-
-    const rpm =
-        1400 + Math.random() * 120;
-
-    return {
-        temperature: Number(temperature.toFixed(1)),
-        vibration: Number(vibration.toFixed(2)),
-        rpm: Math.round(rpm),
-        timestamp: new Date().toISOString()
-    };
+return {
+temperature: Number((40 + Math.random() * 8).toFixed(1)),
+vibration: Number((1.4 + Math.random() * 1.2).toFixed(2)),
+rpm: Math.round(1400 + Math.random() * 120),
+timestamp: new Date().toISOString()
+};
 }
 
+const mimeTypes = {
+".html": "text/html; charset=utf-8",
+".css": "text/css; charset=utf-8",
+".js": "application/javascript; charset=utf-8",
+".json": "application/json; charset=utf-8",
+".png": "image/png",
+".jpg": "image/jpeg",
+".jpeg": "image/jpeg",
+".svg": "image/svg+xml",
+".ico": "image/x-icon"
+};
 
 const server = http.createServer((req, res) => {
 
-    // CORS
-    res.setHeader(
-        "Access-Control-Allow-Origin",
-        "*"
-    );
+res.setHeader("Access-Control-Allow-Origin", "*");
 
-    res.setHeader(
-        "Access-Control-Allow-Methods",
-        "GET, OPTIONS"
-    );
+if (req.method === "OPTIONS") {
+    res.writeHead(204);
+    res.end();
+    return;
+}
 
-    res.setHeader(
-        "Access-Control-Allow-Headers",
-        "Content-Type"
-    );
+if (req.method !== "GET") {
+    res.writeHead(405, {
+        "Content-Type": "application/json"
+    });
 
+    res.end(JSON.stringify({
+        error: "Method not allowed"
+    }));
 
-    // OPTIONS request
-    if (req.method === "OPTIONS") {
+    return;
+}
 
-        res.writeHead(204);
+// ==============================
+// SENSOR API
+// ==============================
 
-        res.end();
+if (req.url === "/api/sensors") {
 
-        return;
-    }
+    const data = generateSensorData();
 
+    res.writeHead(200, {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store"
+    });
 
-    // Sensor API
-    if (
-        req.method === "GET" &&
-        req.url === "/api/sensors"
-    ) {
+    res.end(JSON.stringify(data));
 
-        const data =
-            generateSensorData();
+    console.log("Sensor data sent:", data);
 
+    return;
+}
 
-        res.writeHead(
-            200,
-            {
-                "Content-Type":
-                    "application/json"
-            }
-        );
+// ==============================
+// WEBSITE FILES
+// ==============================
 
+let requestPath = req.url.split("?")[0];
 
-        res.end(
-            JSON.stringify(data)
-        );
+if (requestPath === "/") {
+    requestPath = "/index.html";
+}
 
+const filePath = path.join(
+    ROOT,
+    requestPath
+);
 
-        console.log(
-            "Sensor data sent:",
-            data
-        );
+// Security check
+if (!filePath.startsWith(ROOT)) {
 
+    res.writeHead(403, {
+        "Content-Type": "text/plain"
+    });
 
-        return;
-    }
+    res.end("403 Forbidden");
 
+    return;
+}
 
-    // Home
-    if (
-        req.method === "GET" &&
-        req.url === "/"
-    ) {
+fs.readFile(
+    filePath,
+    (error, data) => {
 
-        res.writeHead(
-            200,
-            {
-                "Content-Type":
-                    "text/plain"
-            }
-        );
+        if (error) {
 
+            res.writeHead(404, {
+                "Content-Type": "text/plain"
+            });
 
-        res.end(
-            "NEXUS Virtual IoT Server is running."
-        );
+            res.end("404 - File not found");
 
-
-        return;
-    }
-
-
-    // 404
-    res.writeHead(
-        404,
-        {
-            "Content-Type":
-                "application/json"
+            return;
         }
-    );
 
+        const extension =
+            path.extname(filePath)
+                .toLowerCase();
 
-    res.end(
-        JSON.stringify({
-            error: "Route not found"
-        })
-    );
+        const contentType =
+            mimeTypes[extension] ||
+            "application/octet-stream";
+
+        res.writeHead(200, {
+            "Content-Type": contentType,
+            "Cache-Control": "no-cache"
+        });
+
+        res.end(data);
+    }
+);
 
 });
 
+// ==============================
+// SERVER ERROR
+// ==============================
+
+server.on(
+"error",
+(error) => {
+
+    if (error.code === "EADDRINUSE") {
+
+        console.error(
+            "Port 3000 is already in use."
+        );
+
+        console.error(
+            "Stop the previous Node server first."
+        );
+
+        return;
+    }
+
+    console.error(
+        "Server error:",
+        error
+    );
+}
+
+);
+
+// ==============================
+// START SERVER
+// ==============================
 
 server.listen(
-    PORT,
-    () => {
+PORT,
+() => {
 
-        console.log("");
-        console.log(
-            "================================"
-        );
+    console.log("");
+    console.log(
+        "================================"
+    );
 
-        console.log(
-            " NEXUS VIRTUAL IoT SERVER"
-        );
+    console.log(
+        " NEXUS VIRTUAL IoT SERVER"
+    );
 
-        console.log(
-            "================================"
-        );
+    console.log(
+        "================================"
+    );
 
-        console.log(
-            `Server running at: http://localhost:${PORT}`
-        );
+    console.log(
+        "Website:    http://localhost:3000"
+    );
 
-        console.log(
-            `Sensor API: http://localhost:${PORT}/api/sensors`
-        );
+    console.log(
+        "Sensor API: http://localhost:3000/api/sensors"
+    );
 
-        console.log("");
-    }
+    console.log("");
+
+    console.log(
+        "Virtual sensor system is ONLINE."
+    );
+
+    console.log("");
+}
+
 );

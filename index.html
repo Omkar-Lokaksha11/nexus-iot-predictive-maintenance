@@ -1,12 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
-
-    <meta name="viewport"
-        content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <meta name="description"
         content="NEXUS - Intelligent IoT Predictive Maintenance Platform">
@@ -14,27 +12,20 @@
     <title>NEXUS | Machine Intelligence</title>
 
     <link rel="stylesheet" href="style.css">
-
 </head>
 
-
 <body>
-
 
     <!-- =========================
          BACKGROUND
     ========================== -->
 
     <div class="background">
-
         <div class="grid"></div>
 
         <div class="glow glow-one"></div>
-
         <div class="glow glow-two"></div>
-
     </div>
-
 
 
     <!-- =========================
@@ -44,39 +35,21 @@
     <header class="navbar">
 
         <div class="logo">
-
             NEXUS<span>.</span>
-
         </div>
 
-
         <nav>
-
-            <a href="#home">
-                Home
-            </a>
-
-            <a href="#monitoring">
-                Monitoring
-            </a>
-
-            <a href="#technology">
-                Technology
-            </a>
-
+            <a href="#home">Home</a>
+            <a href="#monitoring">Monitoring</a>
+            <a href="#technology">Technology</a>
         </nav>
 
-
         <div class="system-status">
-
             <span class="status-dot"></span>
-
             SYSTEM ONLINE
-
         </div>
 
     </header>
-
 
 
     <!-- =========================
@@ -85,65 +58,41 @@
 
     <main>
 
-
         <!-- =========================
-             HERO
+             HERO SECTION
         ========================== -->
 
-        <section
-            id="home"
-            class="hero">
-
-
-            <!-- HERO CONTENT -->
+        <section id="home" class="hero">
 
             <div class="hero-content">
 
-
                 <div class="eyebrow">
-
                     <span></span>
-
                     INDUSTRIAL INTELLIGENCE SYSTEM
-
                 </div>
 
-
                 <h1>
-
                     Predict the
-
-                    <span>
-                        Unexpected.
-                    </span>
-
+                    <span>Unexpected.</span>
                 </h1>
 
-
                 <p class="hero-description">
-
                     NEXUS combines IoT sensing and intelligent
                     analytics to monitor machine health and
                     detect potential failures before they happen.
-
                 </p>
-
 
                 <div class="hero-buttons">
 
-
                     <button
                         id="launchButton"
-                        class="primary-button">
+                        class="primary-button"
+                        type="button">
 
                         Launch Monitoring
-
-                        <span>
-                            →
-                        </span>
+                        <span>→</span>
 
                     </button>
-
 
                     <a
                         href="#technology"
@@ -153,11 +102,9 @@
 
                     </a>
 
-
                 </div>
 
             </div>
-
 
 
             <!-- =========================
@@ -166,63 +113,31 @@
 
             <div class="machine-container">
 
-
-                <div
-                    class="machine-ring ring-one">
-                </div>
-
-
-                <div
-                    class="machine-ring ring-two">
-                </div>
-
-
-                <div
-                    class="machine-ring ring-three">
-                </div>
-
+                <div class="machine-ring ring-one"></div>
+                <div class="machine-ring ring-two"></div>
+                <div class="machine-ring ring-three"></div>
 
                 <div class="machine-core">
 
                     <div class="core-inner">
-
                         ⚙
-
                     </div>
 
                 </div>
 
-
-                <!-- TEMPERATURE -->
-
                 <div class="sensor sensor-one">
-
                     <span></span>
-
                     TEMP
-
                 </div>
-
-
-                <!-- VIBRATION -->
 
                 <div class="sensor sensor-two">
-
                     <span></span>
-
                     VIBRATION
-
                 </div>
 
-
-                <!-- RPM -->
-
                 <div class="sensor sensor-three">
-
                     <span></span>
-
                     RPM
-
                 </div>
 
             </div>
@@ -230,60 +145,154 @@
         </section>
 
 
-
         <!-- =========================
-             MONITORING
+             MONITORING SECTION
         ========================== -->
 
         <section
             id="monitoring"
             class="monitoring-section">
 
-
             <div class="section-heading">
 
-
                 <div class="eyebrow">
-
                     <span></span>
-
                     LIVE SYSTEM
-
                 </div>
 
-
                 <h2>
-
                     Machine intelligence,
-
-                    <span>
-                        in real time.
-                    </span>
-
+                    <span>in real time.</span>
                 </h2>
 
             </div>
 
 
+            <!-- =========================
+                 MONITORING CONTROL PANEL
+            ========================== -->
+
+            <div class="monitoring-control-panel">
+
+                <!-- DATA SOURCE -->
+
+                <div class="monitor-control">
+
+                    <div class="monitor-control-title">
+                        DATA SOURCE
+                    </div>
+
+                    <div class="monitor-control-subtitle">
+                        Select machine data input
+                    </div>
+
+                    <div class="control-buttons">
+
+                        <button
+                            type="button"
+                            class="source-button active"
+                            data-source="simulation">
+
+                            SIMULATION
+
+                        </button>
+
+                        <button
+                            type="button"
+                            class="source-button"
+                            data-source="iot">
+
+                            IoT DEVICE
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- MACHINE MODE -->
+
+                <div class="monitor-control">
+
+                    <div class="monitor-control-title">
+                        MACHINE MODE
+                    </div>
+
+                    <div class="monitor-control-subtitle">
+                        Test machine condition
+                    </div>
+
+                    <div class="control-buttons">
+
+                        <button
+                            type="button"
+                            class="control-button active"
+                            data-mode="normal">
+
+                            NORMAL
+
+                        </button>
+
+                        <button
+                            type="button"
+                            class="control-button"
+                            data-mode="warning">
+
+                            WARNING
+
+                        </button>
+
+                        <button
+                            type="button"
+                            class="control-button"
+                            data-mode="critical">
+
+                            CRITICAL
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- CONNECTION STATUS -->
+
+                <div class="connection-status">
+
+                    <span class="connection-dot"></span>
+
+                    <div>
+
+                        <strong id="connectionText">
+                            SIMULATION MODE
+                        </strong>
+
+                        <small id="connectionSubtext">
+                            Local machine simulation active
+                        </small>
+
+                    </div>
+
+                </div>
+
+            </div>
+
 
             <!-- =========================
-                 LIVE MACHINE DATA
+                 SENSOR STATISTICS
             ========================== -->
 
             <div class="stats-grid">
-
 
                 <!-- MACHINE HEALTH -->
 
                 <div class="stat-card">
 
-
                     <div class="stat-label">
-
                         MACHINE HEALTH
-
                     </div>
-
 
                     <div class="stat-value">
 
@@ -291,34 +300,24 @@
                             94
                         </span>
 
-                        <span>
-                            %
-                        </span>
+                        <span>%</span>
 
                     </div>
 
-
                     <div class="stat-status">
-
                         ● OPTIMAL
-
                     </div>
 
                 </div>
-
 
 
                 <!-- TEMPERATURE -->
 
                 <div class="stat-card">
 
-
                     <div class="stat-label">
-
                         TEMPERATURE
-
                     </div>
-
 
                     <div class="stat-value">
 
@@ -326,34 +325,24 @@
                             42
                         </span>
 
-                        <span>
-                            °C
-                        </span>
+                        <span>°C</span>
 
                     </div>
 
-
                     <div class="stat-status">
-
                         ● NORMAL
-
                     </div>
 
                 </div>
-
 
 
                 <!-- VIBRATION -->
 
                 <div class="stat-card">
 
-
                     <div class="stat-label">
-
                         VIBRATION
-
                     </div>
-
 
                     <div class="stat-value">
 
@@ -361,34 +350,24 @@
                             1.8
                         </span>
 
-                        <span>
-                            mm/s
-                        </span>
+                        <span>mm/s</span>
 
                     </div>
 
-
                     <div class="stat-status">
-
                         ● STABLE
-
                     </div>
 
                 </div>
 
 
-
-                <!-- RPM -->
+                <!-- MOTOR RPM -->
 
                 <div class="stat-card">
 
-
                     <div class="stat-label">
-
                         MOTOR SPEED
-
                     </div>
-
 
                     <div class="stat-value">
 
@@ -396,253 +375,163 @@
                             1450
                         </span>
 
-                        <span>
-                            RPM
-                        </span>
+                        <span>RPM</span>
 
                     </div>
 
-
                     <div class="stat-status">
-
                         ● RUNNING
-
                     </div>
 
                 </div>
 
             </div>
-
 
 
             <!-- =========================
                  LIVE SENSOR GRAPH
             ========================== -->
 
-            <section class="sensor-graph-section">
-
+            <div class="graph-card">
 
                 <div class="graph-header">
 
-
                     <div>
 
-                        <span class="graph-label">
+                        <div class="stat-label">
+                            LIVE SENSOR TREND
+                        </div>
 
-                            LIVE SENSOR DATA
-
-                        </span>
-
-
-                        <h2>
-
-                            Machine Performance
-
-                        </h2>
+                        <h3>
+                            Machine telemetry
+                        </h3>
 
                     </div>
 
+                    <div class="live-indicator">
 
-                    <div class="graph-live">
-
-                        <span
-                            class="graph-live-dot">
-                        </span>
-
+                        <span></span>
                         LIVE
 
                     </div>
 
                 </div>
 
-
-
-                <div class="graph-card">
-
-                    <canvas
-                        id="sensorGraph">
-                    </canvas>
-
-                </div>
-
-
+                <canvas id="sensorGraph"></canvas>
 
                 <div class="graph-legend">
 
-
-                    <div class="legend-item">
-
-                        <span
-                            class="legend-dot temperature">
-                        </span>
-
+                    <span>
+                        <i class="legend-temperature"></i>
                         Temperature
+                    </span>
 
-                    </div>
-
-
-                    <div class="legend-item">
-
-                        <span
-                            class="legend-dot vibration">
-                        </span>
-
+                    <span>
+                        <i class="legend-vibration"></i>
                         Vibration
+                    </span>
 
-                    </div>
-
-
-                    <div class="legend-item">
-
-                        <span
-                            class="legend-dot rpm">
-                        </span>
-
+                    <span>
+                        <i class="legend-rpm"></i>
                         RPM
-
-                    </div>
+                    </span>
 
                 </div>
 
-            </section>
+            </div>
 
         </section>
 
 
-
         <!-- =========================
-             TECHNOLOGY
+             TECHNOLOGY SECTION
         ========================== -->
 
         <section
             id="technology"
             class="technology-section">
 
-
             <div class="section-heading">
 
-
                 <div class="eyebrow">
-
                     <span></span>
-
                     THE NEXUS ENGINE
-
                 </div>
 
-
                 <h2>
-
                     From machine data
-
-                    <span>
-                        to intelligence.
-                    </span>
-
+                    <span>to intelligence.</span>
                 </h2>
 
             </div>
 
 
-
             <div class="technology-flow">
-
 
                 <!-- SENSE -->
 
                 <div class="flow-card">
 
-
                     <div class="flow-number">
-
                         01
-
                     </div>
 
-
                     <h3>
-
                         Sense
-
                     </h3>
 
-
                     <p>
-
                         Sensors continuously capture
                         temperature, vibration and
                         machine operating parameters.
-
                     </p>
 
                 </div>
 
 
-
                 <div class="flow-line"></div>
-
 
 
                 <!-- CONNECT -->
 
                 <div class="flow-card">
 
-
                     <div class="flow-number">
-
                         02
-
                     </div>
 
-
                     <h3>
-
                         Connect
-
                     </h3>
 
-
                     <p>
-
-                        ESP32 collects the sensor data
+                        ESP32 collects sensor data
                         and transmits machine information
                         through IoT connectivity.
-
                     </p>
 
                 </div>
 
 
-
                 <div class="flow-line"></div>
-
 
 
                 <!-- PREDICT -->
 
                 <div class="flow-card">
 
-
                     <div class="flow-number">
-
                         03
-
                     </div>
 
-
                     <h3>
-
                         Predict
-
                     </h3>
 
-
                     <p>
-
                         Intelligent analysis identifies
                         abnormal patterns and generates
                         maintenance alerts.
-
                     </p>
 
                 </div>
@@ -654,36 +543,25 @@
     </main>
 
 
-
     <!-- =========================
          FOOTER
     ========================== -->
 
     <footer>
 
-
         <div>
-
             NEXUS<span>.</span>
-
         </div>
 
-
         <p>
-
             IoT-Based Predictive Maintenance System
-
         </p>
 
-
         <p>
-
             MDM Mechanical Project • 2026
-
         </p>
 
     </footer>
-
 
 
     <!-- =========================
@@ -692,7 +570,7 @@
 
     <script src="script.js"></script>
 
-
 </body>
 
 </html>
+
