@@ -1,10 +1,12 @@
 // ==========================================
 // NEXUS - INTELLIGENT MACHINE MONITORING
+// LIVE SENSOR GRAPH
 // ==========================================
 
 document.addEventListener("DOMContentLoaded", function () {
 
     console.log("NEXUS system initialized.");
+
 
     // ==========================================
     // ELEMENTS
@@ -39,18 +41,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // ==========================================
-    // LAUNCH MONITORING
+    // LAUNCH BUTTON
     // ==========================================
 
     if (launchButton && monitoringSection) {
 
-        launchButton.addEventListener("click", function () {
+        launchButton.addEventListener(
+            "click",
+            function () {
 
-            monitoringSection.scrollIntoView({
-                behavior: "smooth"
-            });
+                monitoringSection.scrollIntoView({
+                    behavior: "smooth"
+                });
 
-        });
+            }
+        );
 
     }
 
@@ -192,6 +197,83 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // ==========================================
+    // GRAPH DATA
+    // ==========================================
+
+    const MAX_POINTS = 20;
+
+    const temperatureHistory = [];
+
+    const vibrationHistory = [];
+
+    const rpmHistory = [];
+
+
+    // ==========================================
+    // CANVAS
+    // ==========================================
+
+    const canvas =
+        document.getElementById(
+            "sensorGraph"
+        );
+
+
+    const ctx =
+        canvas
+            ? canvas.getContext("2d")
+            : null;
+
+
+    // ==========================================
+    // GRAPH RESIZE
+    // ==========================================
+
+    function resizeGraph() {
+
+        if (!canvas) {
+            return;
+        }
+
+
+        const rect =
+            canvas.getBoundingClientRect();
+
+
+        const dpr =
+            window.devicePixelRatio || 1;
+
+
+        canvas.width =
+            rect.width * dpr;
+
+
+        canvas.height =
+            rect.height * dpr;
+
+
+        ctx.setTransform(
+            dpr,
+            0,
+            0,
+            dpr,
+            0,
+            0
+        );
+
+
+        drawGraph();
+
+    }
+
+
+    window.addEventListener(
+        "resize",
+        resizeGraph
+    );
+
+
+    // ==========================================
     // HEALTH CALCULATION
     // ==========================================
 
@@ -262,7 +344,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // ==========================================
-    // MACHINE STATUS
+    // STATUS
     // ==========================================
 
     function getMachineStatus(health) {
@@ -296,7 +378,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // ==========================================
-    // ALERT SYSTEM
+    // ALERT
     // ==========================================
 
     function showMachineAlert(status) {
@@ -408,14 +490,312 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // ==========================================
-    // UPDATE MACHINE DATA
+    // UPDATE GRAPH HISTORY
+    // ==========================================
+
+    function updateHistory() {
+
+        temperatureHistory.push(
+            temperature
+        );
+
+        vibrationHistory.push(
+            vibration
+        );
+
+        rpmHistory.push(
+            rpm
+        );
+
+
+        if (
+            temperatureHistory.length >
+            MAX_POINTS
+        ) {
+
+            temperatureHistory.shift();
+
+        }
+
+
+        if (
+            vibrationHistory.length >
+            MAX_POINTS
+        ) {
+
+            vibrationHistory.shift();
+
+        }
+
+
+        if (
+            rpmHistory.length >
+            MAX_POINTS
+        ) {
+
+            rpmHistory.shift();
+
+        }
+
+    }
+
+
+    // ==========================================
+    // GRAPH NORMALIZATION
+    // ==========================================
+
+    function normalize(
+        value,
+        min,
+        max
+    ) {
+
+        return (
+            (value - min) /
+            (max - min)
+        );
+
+    }
+
+
+    // ==========================================
+    // DRAW GRAPH
+    // ==========================================
+
+    function drawGraph() {
+
+        if (!canvas || !ctx) {
+
+            return;
+
+        }
+
+
+        const width =
+            canvas.clientWidth;
+
+        const height =
+            canvas.clientHeight;
+
+
+        ctx.clearRect(
+            0,
+            0,
+            width,
+            height
+        );
+
+
+        // ======================================
+        // GRID
+        // ======================================
+
+        ctx.lineWidth = 1;
+
+
+        for (
+            let i = 0;
+            i <= 5;
+            i++
+        ) {
+
+            const y =
+                20 +
+                (
+                    (height - 40) *
+                    i /
+                    5
+                );
+
+
+            ctx.beginPath();
+
+            ctx.moveTo(
+                0,
+                y
+            );
+
+            ctx.lineTo(
+                width,
+                y
+            );
+
+            ctx.strokeStyle =
+                "rgba(255,255,255,0.07)";
+
+            ctx.stroke();
+
+        }
+
+
+        // ======================================
+        // VERTICAL GRID
+        // ======================================
+
+        for (
+            let i = 0;
+            i <= 10;
+            i++
+        ) {
+
+            const x =
+                width *
+                i /
+                10;
+
+
+            ctx.beginPath();
+
+            ctx.moveTo(
+                x,
+                0
+            );
+
+            ctx.lineTo(
+                x,
+                height
+            );
+
+            ctx.strokeStyle =
+                "rgba(255,255,255,0.04)";
+
+            ctx.stroke();
+
+        }
+
+
+        // ======================================
+        // DRAW LINE FUNCTION
+        // ======================================
+
+        function drawLine(
+            data,
+            min,
+            max,
+            lineColor
+        ) {
+
+            if (data.length < 2) {
+
+                return;
+
+            }
+
+
+            ctx.beginPath();
+
+
+            data.forEach(
+                function (value, index) {
+
+                    const x =
+                        (
+                            index /
+                            (MAX_POINTS - 1)
+                        ) *
+                        width;
+
+
+                    const normalized =
+                        normalize(
+                            value,
+                            min,
+                            max
+                        );
+
+
+                    const y =
+                        height -
+                        (
+                            normalized *
+                            (height - 40)
+                        ) -
+                        20;
+
+
+                    if (index === 0) {
+
+                        ctx.moveTo(
+                            x,
+                            y
+                        );
+
+                    }
+
+                    else {
+
+                        ctx.lineTo(
+                            x,
+                            y
+                        );
+
+                    }
+
+                }
+            );
+
+
+            ctx.strokeStyle =
+                lineColor;
+
+            ctx.lineWidth = 2;
+
+            ctx.lineJoin = "round";
+
+            ctx.lineCap = "round";
+
+            ctx.stroke();
+
+        }
+
+
+        // ======================================
+        // TEMPERATURE
+        // ======================================
+
+        drawLine(
+            temperatureHistory,
+            35,
+            55,
+            "#ff7b7b"
+        );
+
+
+        // ======================================
+        // VIBRATION
+        // ======================================
+
+        drawLine(
+            vibrationHistory,
+            1,
+            3.5,
+            "#ffd166"
+        );
+
+
+        // ======================================
+        // RPM
+        // ======================================
+
+        drawLine(
+            rpmHistory,
+            1300,
+            1600,
+            "#6ea8ff"
+        );
+
+    }
+
+
+    // ==========================================
+    // MACHINE DATA UPDATE
     // ==========================================
 
     function updateMachineData() {
 
 
         // ======================================
-        // MANUAL SIMULATION MODES
+        // NORMAL
         // ======================================
 
         if (simulationMode === "normal") {
@@ -432,7 +812,13 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
 
-        else if (simulationMode === "warning") {
+        // ======================================
+        // WARNING
+        // ======================================
+
+        else if (
+            simulationMode === "warning"
+        ) {
 
             temperature +=
                 (48 - temperature) * 0.25;
@@ -446,7 +832,13 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
 
-        else if (simulationMode === "critical") {
+        // ======================================
+        // CRITICAL
+        // ======================================
+
+        else if (
+            simulationMode === "critical"
+        ) {
 
             temperature +=
                 (54 - temperature) * 0.25;
@@ -464,22 +856,34 @@ document.addEventListener("DOMContentLoaded", function () {
         // LIMIT VALUES
         // ======================================
 
-        temperature = Math.max(
-            35,
-            Math.min(55, temperature)
-        );
+        temperature =
+            Math.max(
+                35,
+                Math.min(
+                    55,
+                    temperature
+                )
+            );
 
 
-        vibration = Math.max(
-            1,
-            Math.min(3.5, vibration)
-        );
+        vibration =
+            Math.max(
+                1,
+                Math.min(
+                    3.5,
+                    vibration
+                )
+            );
 
 
-        rpm = Math.max(
-            1300,
-            Math.min(1600, rpm)
-        );
+        rpm =
+            Math.max(
+                1300,
+                Math.min(
+                    1600,
+                    rpm
+                )
+            );
 
 
         // ======================================
@@ -495,7 +899,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         const status =
-            getMachineStatus(health);
+            getMachineStatus(
+                health
+            );
 
 
         // ======================================
@@ -508,7 +914,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         // ======================================
-        // UPDATE VALUES
+        // VALUES
         // ======================================
 
         if (healthValue) {
@@ -544,7 +950,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         // ======================================
-        // UPDATE STATUS
+        // STATUS TEXT
         // ======================================
 
         const statusElements =
@@ -581,21 +987,36 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         // ======================================
-        // DEBUG
+        // GRAPH
+        // ======================================
+
+        updateHistory();
+
+        drawGraph();
+
+
+        // ======================================
+        // CONSOLE
         // ======================================
 
         console.log(
-            "NEXUS DATA",
+            "NEXUS LIVE DATA",
             {
-                mode: simulationMode,
+                mode:
+                    simulationMode,
+
                 temperature:
                     temperature.toFixed(1),
+
                 vibration:
                     vibration.toFixed(2),
+
                 rpm:
                     Math.round(rpm),
+
                 health:
                     health,
+
                 status:
                     status.text
             }
@@ -611,7 +1032,9 @@ document.addEventListener("DOMContentLoaded", function () {
     function createControlPanel() {
 
         const panel =
-            document.createElement("div");
+            document.createElement(
+                "div"
+            );
 
 
         panel.className =
@@ -626,11 +1049,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
             </div>
 
+
             <div class="control-subtitle">
 
                 MACHINE SIMULATION
 
             </div>
+
 
             <div class="control-buttons">
 
@@ -642,6 +1067,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 </button>
 
+
                 <button
                     data-mode="warning"
                     class="control-button">
@@ -649,6 +1075,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     WARNING
 
                 </button>
+
 
                 <button
                     data-mode="critical"
@@ -663,7 +1090,9 @@ document.addEventListener("DOMContentLoaded", function () {
         `;
 
 
-        document.body.appendChild(panel);
+        document.body.appendChild(
+            panel
+        );
 
 
         const buttons =
@@ -672,54 +1101,63 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
 
-        buttons.forEach(function (button) {
+        buttons.forEach(
+            function (button) {
 
-            button.addEventListener(
-                "click",
-                function () {
+                button.addEventListener(
+                    "click",
+                    function () {
 
-                    simulationMode =
-                        button.dataset.mode;
-
-
-                    buttons.forEach(
-                        function (btn) {
-
-                            btn.classList.remove(
-                                "active"
-                            );
-
-                        }
-                    );
+                        simulationMode =
+                            button.dataset.mode;
 
 
-                    button.classList.add(
-                        "active"
-                    );
+                        buttons.forEach(
+                            function (btn) {
+
+                                btn.classList.remove(
+                                    "active"
+                                );
+
+                            }
+                        );
 
 
-                    console.log(
-                        "Simulation mode:",
-                        simulationMode
-                    );
+                        button.classList.add(
+                            "active"
+                        );
 
-                }
-            );
 
-        });
+                        console.log(
+                            "Simulation mode:",
+                            simulationMode
+                        );
+
+                    }
+                );
+
+            }
+        );
 
     }
 
 
     // ==========================================
-    // START CONTROL PANEL
+    // INITIAL GRAPH
+    // ==========================================
+
+    resizeGraph();
+
+
+    // ==========================================
+    // CONTROL PANEL
     // ==========================================
 
     createControlPanel();
 
 
     // ==========================================
-    // INITIAL UPDATE
+    // INITIAL DATA
     // ==========================================
 
     updateMachineData();
@@ -733,5 +1171,6 @@ document.addEventListener("DOMContentLoaded", function () {
         updateMachineData,
         2000
     );
+
 
 });

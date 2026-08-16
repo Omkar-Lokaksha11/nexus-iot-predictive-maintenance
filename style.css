@@ -1236,3 +1236,249 @@ footer {
     }
 
 }
+
+/* ==========================================
+   NEXUS LIVE SENSOR GRAPH
+========================================== */
+
+.sensor-graph-section {
+
+    width: min(1100px, 92%);
+
+    margin: 80px auto;
+
+}
+
+
+.graph-header {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: flex-end;
+
+    margin-bottom: 20px;
+
+}
+
+
+.graph-label {
+
+    font-size: 10px;
+
+    letter-spacing: 2px;
+
+    opacity: 0.5;
+
+}
+
+
+.graph-header h2 {
+
+    margin: 7px 0 0;
+
+    font-size: 28px;
+
+    font-weight: 600;
+
+}
+
+
+.graph-live {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    font-size: 10px;
+
+    letter-spacing: 1.5px;
+
+    opacity: 0.7;
+
+}
+
+
+.graph-live-dot {
+
+    width: 7px;
+
+    height: 7px;
+
+    border-radius: 50%;
+
+    background: currentColor;
+
+    animation: graphLivePulse 1.2s infinite;
+
+}
+
+
+.graph-card {
+
+    position: relative;
+
+    width: 100%;
+
+    height: 330px;
+
+    padding: 20px;
+
+    box-sizing: border-box;
+
+    border: 1px solid rgba(255, 255, 255, 0.10);
+
+    border-radius: 18px;
+
+    background: rgba(10, 15, 25, 0.55);
+
+    backdrop-filter: blur(18px);
+
+    -webkit-backdrop-filter: blur(18px);
+
+    overflow: hidden;
+
+}
+
+
+#sensorGraph {
+
+    width: 100%;
+
+    height: 100%;
+
+    display: block;
+
+}
+
+
+.graph-legend {
+
+    display: flex;
+
+    justify-content: center;
+
+    gap: 30px;
+
+    margin-top: 18px;
+
+}
+
+
+.legend-item {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 7px;
+
+    font-size: 11px;
+
+    opacity: 0.7;
+
+}
+
+
+.legend-dot {
+
+    width: 8px;
+
+    height: 8px;
+
+    border-radius: 50%;
+
+}
+
+
+.legend-dot.temperature {
+
+    background: #ff7b7b;
+
+}
+
+
+.legend-dot.vibration {
+
+    background: #ffd166;
+
+}
+
+
+.legend-dot.rpm {
+
+    background: #6ea8ff;
+
+}
+
+
+@keyframes graphLivePulse {
+
+    0%,
+    100% {
+
+        opacity: 1;
+
+        transform: scale(1);
+
+    }
+
+    50% {
+
+        opacity: 0.3;
+
+        transform: scale(1.5);
+
+    }
+
+}
+
+
+@media (max-width: 600px) {
+
+    .sensor-graph-section {
+
+        width: 94%;
+
+        margin: 50px auto;
+
+    }
+
+
+    .graph-header {
+
+        align-items: flex-start;
+
+        gap: 15px;
+
+    }
+
+
+    .graph-header h2 {
+
+        font-size: 22px;
+
+    }
+
+
+    .graph-card {
+
+        height: 260px;
+
+        padding: 10px;
+
+    }
+
+
+    .graph-legend {
+
+        flex-wrap: wrap;
+
+        gap: 15px;
+
+    }
+
+}
