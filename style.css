@@ -1073,3 +1073,166 @@ footer {
     }
 
 }
+/* ==========================================
+   NEXUS CONTROL PANEL
+========================================== */
+
+.nexus-control-panel {
+    position: fixed;
+
+    right: 30px;
+    bottom: 30px;
+
+    width: 300px;
+
+    padding: 20px;
+
+    z-index: 9998;
+
+    border: 1px solid rgba(255, 255, 255, 0.12);
+
+    border-radius: 16px;
+
+    background: rgba(10, 15, 25, 0.92);
+
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+
+    box-shadow:
+        0 15px 40px rgba(0, 0, 0, 0.35);
+
+    animation: nexusControlIn 0.5s ease forwards;
+}
+
+
+/* TITLE */
+
+.control-title {
+    font-size: 14px;
+
+    font-weight: 700;
+
+    letter-spacing: 2px;
+}
+
+
+/* SUBTITLE */
+
+.control-subtitle {
+    margin-top: 5px;
+
+    margin-bottom: 15px;
+
+    font-size: 10px;
+
+    letter-spacing: 1.5px;
+
+    opacity: 0.5;
+}
+
+
+/* BUTTON CONTAINER */
+
+.control-buttons {
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 8px;
+}
+
+
+/* BUTTON */
+
+.control-button {
+    padding: 9px 13px;
+
+    border: 1px solid rgba(255, 255, 255, 0.12);
+
+    border-radius: 8px;
+
+    background: rgba(255, 255, 255, 0.05);
+
+    color: inherit;
+
+    font-size: 10px;
+
+    font-weight: 600;
+
+    letter-spacing: 1px;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.2s ease,
+        background 0.2s ease,
+        border-color 0.2s ease;
+}
+
+
+/* HOVER */
+
+.control-button:hover {
+
+    transform: translateY(-2px);
+
+    background: rgba(255, 255, 255, 0.1);
+
+}
+
+
+/* ACTIVE */
+
+.control-button.active {
+
+    background: rgba(255, 255, 255, 0.12);
+
+    border-color: rgba(255, 255, 255, 0.3);
+
+}
+
+
+/* ENTRY ANIMATION */
+
+@keyframes nexusControlIn {
+
+    from {
+
+        opacity: 0;
+
+        transform:
+            translateY(25px)
+            scale(0.95);
+
+    }
+
+    to {
+
+        opacity: 1;
+
+        transform:
+            translateY(0)
+            scale(1);
+
+    }
+
+}
+
+
+/* MOBILE */
+
+@media (max-width: 600px) {
+
+    .nexus-control-panel {
+
+        right: 15px;
+
+        bottom: 15px;
+
+        left: 15px;
+
+        width: auto;
+
+    }
+
+}

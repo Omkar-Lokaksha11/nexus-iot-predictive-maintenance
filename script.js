@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", function () {
     console.log("NEXUS system initialized.");
 
     // ==========================================
-    // GET HTML ELEMENTS
+    // ELEMENTS
     // ==========================================
 
     const launchButton =
@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // ==========================================
-    // MONITORING BUTTON
+    // LAUNCH MONITORING
     // ==========================================
 
     if (launchButton && monitoringSection) {
@@ -56,22 +56,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // ==========================================
-    // SYSTEM ONLINE INDICATOR
+    // SYSTEM STATUS
     // ==========================================
 
     if (statusDot) {
 
         setInterval(function () {
 
-            if (statusDot.style.opacity === "0.3") {
-
-                statusDot.style.opacity = "1";
-
-            } else {
-
-                statusDot.style.opacity = "0.3";
-
-            }
+            statusDot.style.opacity =
+                statusDot.style.opacity === "0.3"
+                    ? "1"
+                    : "0.3";
 
         }, 800);
 
@@ -190,7 +185,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // ==========================================
-    // MACHINE HEALTH CALCULATION
+    // SIMULATION MODE
+    // ==========================================
+
+    let simulationMode = "normal";
+
+
+    // ==========================================
+    // HEALTH CALCULATION
     // ==========================================
 
     function calculateHealth(
@@ -201,10 +203,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
         let health = 100;
 
-
-        // ------------------------------
-        // TEMPERATURE EFFECT
-        // ------------------------------
 
         if (temperature > 45) {
 
@@ -221,10 +219,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
 
-        // ------------------------------
-        // VIBRATION EFFECT
-        // ------------------------------
-
         if (vibration > 2.2) {
 
             health -=
@@ -239,10 +233,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
         }
 
-
-        // ------------------------------
-        // RPM EFFECT
-        // ------------------------------
 
         if (rpm > 1550) {
 
@@ -259,10 +249,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
         }
 
-
-        // ------------------------------
-        // LIMIT HEALTH
-        // ------------------------------
 
         health = Math.max(
             0,
@@ -310,22 +296,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // ==========================================
-    // MACHINE ALERT SYSTEM
+    // ALERT SYSTEM
     // ==========================================
 
-    function showMachineAlert(
-        status,
-        temperature,
-        vibration,
-        rpm
-    ) {
+    function showMachineAlert(status) {
 
         let alertMessage = "";
 
-
-        // --------------------------------------
-        // CRITICAL
-        // --------------------------------------
 
         if (status === "critical") {
 
@@ -334,22 +311,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
         }
 
-
-        // --------------------------------------
-        // WARNING
-        // --------------------------------------
-
         else if (status === "warning") {
 
             alertMessage =
                 "Abnormal machine condition detected.";
 
         }
-
-
-        // --------------------------------------
-        // OPTIMAL
-        // --------------------------------------
 
         else {
 
@@ -358,10 +325,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
         }
 
-
-        // --------------------------------------
-        // REMOVE OLD ALERT
-        // --------------------------------------
 
         const existingAlert =
             document.querySelector(
@@ -376,10 +339,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
 
-        // --------------------------------------
-        // CREATE ALERT
-        // --------------------------------------
-
         const alert =
             document.createElement("div");
 
@@ -388,30 +347,18 @@ document.addEventListener("DOMContentLoaded", function () {
             "machine-alert " + status;
 
 
-        // --------------------------------------
-        // ALERT ICON
-        // --------------------------------------
-
         let icon = "●";
 
 
-        if (status === "warning") {
+        if (
+            status === "warning" ||
+            status === "critical"
+        ) {
 
             icon = "⚠";
 
         }
 
-
-        if (status === "critical") {
-
-            icon = "⚠";
-
-        }
-
-
-        // --------------------------------------
-        // ALERT CONTENT
-        // --------------------------------------
 
         alert.innerHTML = `
 
@@ -421,7 +368,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
             </div>
 
-
             <div class="alert-content">
 
                 <strong>
@@ -429,7 +375,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     ${status.toUpperCase()}
 
                 </strong>
-
 
                 <span>
 
@@ -442,16 +387,8 @@ document.addEventListener("DOMContentLoaded", function () {
         `;
 
 
-        // --------------------------------------
-        // ADD TO PAGE
-        // --------------------------------------
-
         document.body.appendChild(alert);
 
-
-        // --------------------------------------
-        // NORMAL ALERT AUTO REMOVE
-        // --------------------------------------
 
         if (status === "optimal") {
 
@@ -477,25 +414,55 @@ document.addEventListener("DOMContentLoaded", function () {
     function updateMachineData() {
 
 
-        // --------------------------------------
-        // SENSOR SIMULATION
-        // --------------------------------------
+        // ======================================
+        // MANUAL SIMULATION MODES
+        // ======================================
 
-        temperature +=
-            (Math.random() - 0.5) * 2;
+        if (simulationMode === "normal") {
+
+            temperature +=
+                (Math.random() - 0.5) * 1.2;
+
+            vibration +=
+                (Math.random() - 0.5) * 0.2;
+
+            rpm +=
+                (Math.random() - 0.5) * 50;
+
+        }
 
 
-        vibration +=
-            (Math.random() - 0.5) * 0.4;
+        else if (simulationMode === "warning") {
+
+            temperature +=
+                (48 - temperature) * 0.25;
+
+            vibration +=
+                (2.7 - vibration) * 0.25;
+
+            rpm +=
+                (1570 - rpm) * 0.25;
+
+        }
 
 
-        rpm +=
-            (Math.random() - 0.5) * 80;
+        else if (simulationMode === "critical") {
+
+            temperature +=
+                (54 - temperature) * 0.25;
+
+            vibration +=
+                (3.4 - vibration) * 0.25;
+
+            rpm +=
+                (1600 - rpm) * 0.25;
+
+        }
 
 
-        // --------------------------------------
-        // KEEP VALUES IN RANGE
-        // --------------------------------------
+        // ======================================
+        // LIMIT VALUES
+        // ======================================
 
         temperature = Math.max(
             35,
@@ -504,7 +471,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
         vibration = Math.max(
-            1.0,
+            1,
             Math.min(3.5, vibration)
         );
 
@@ -515,9 +482,9 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
 
-        // --------------------------------------
-        // CALCULATE HEALTH
-        // --------------------------------------
+        // ======================================
+        // HEALTH
+        // ======================================
 
         const health =
             calculateHealth(
@@ -527,65 +494,22 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
 
-        // --------------------------------------
-        // GET MACHINE STATUS
-        // --------------------------------------
-
         const status =
             getMachineStatus(health);
 
 
-        // --------------------------------------
-        // SHOW ALERT
-        // --------------------------------------
+        // ======================================
+        // ALERT
+        // ======================================
 
         showMachineAlert(
-            status.level,
-            temperature,
-            vibration,
-            rpm
+            status.level
         );
 
 
-        // --------------------------------------
-        // UPDATE TEMPERATURE
-        // --------------------------------------
-
-        if (temperatureValue) {
-
-            temperatureValue.textContent =
-                temperature.toFixed(1);
-
-        }
-
-
-        // --------------------------------------
-        // UPDATE VIBRATION
-        // --------------------------------------
-
-        if (vibrationValue) {
-
-            vibrationValue.textContent =
-                vibration.toFixed(2);
-
-        }
-
-
-        // --------------------------------------
-        // UPDATE RPM
-        // --------------------------------------
-
-        if (rpmValue) {
-
-            rpmValue.textContent =
-                Math.round(rpm);
-
-        }
-
-
-        // --------------------------------------
-        // UPDATE HEALTH
-        // --------------------------------------
+        // ======================================
+        // UPDATE VALUES
+        // ======================================
 
         if (healthValue) {
 
@@ -595,9 +519,33 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
 
-        // --------------------------------------
-        // UPDATE STATUS TEXT
-        // --------------------------------------
+        if (temperatureValue) {
+
+            temperatureValue.textContent =
+                temperature.toFixed(1);
+
+        }
+
+
+        if (vibrationValue) {
+
+            vibrationValue.textContent =
+                vibration.toFixed(2);
+
+        }
+
+
+        if (rpmValue) {
+
+            rpmValue.textContent =
+                Math.round(rpm);
+
+        }
+
+
+        // ======================================
+        // UPDATE STATUS
+        // ======================================
 
         const statusElements =
             document.querySelectorAll(
@@ -607,14 +555,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (statusElements.length >= 4) {
 
-
-            // Machine Health
-
             statusElements[0].textContent =
                 "● " + status.text;
 
-
-            // Temperature
 
             statusElements[1].textContent =
                 temperature > 48
@@ -622,15 +565,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     : "● NORMAL";
 
 
-            // Vibration
-
             statusElements[2].textContent =
                 vibration > 2.5
                     ? "● HIGH"
                     : "● STABLE";
 
-
-            // RPM
 
             statusElements[3].textContent =
                 rpm > 1550 ||
@@ -641,27 +580,22 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
 
-        // --------------------------------------
-        // CONSOLE DATA
-        // --------------------------------------
+        // ======================================
+        // DEBUG
+        // ======================================
 
         console.log(
-            "NEXUS LIVE DATA",
+            "NEXUS DATA",
             {
+                mode: simulationMode,
                 temperature:
-                    temperature.toFixed(1)
-                    + " °C",
-
+                    temperature.toFixed(1),
                 vibration:
-                    vibration.toFixed(2)
-                    + " mm/s",
-
+                    vibration.toFixed(2),
                 rpm:
                     Math.round(rpm),
-
                 health:
-                    health + "%",
-
+                    health,
                 status:
                     status.text
             }
@@ -671,7 +605,121 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // ==========================================
-    // INITIAL DATA UPDATE
+    // CONTROL PANEL
+    // ==========================================
+
+    function createControlPanel() {
+
+        const panel =
+            document.createElement("div");
+
+
+        panel.className =
+            "nexus-control-panel";
+
+
+        panel.innerHTML = `
+
+            <div class="control-title">
+
+                NEXUS CONTROL
+
+            </div>
+
+            <div class="control-subtitle">
+
+                MACHINE SIMULATION
+
+            </div>
+
+            <div class="control-buttons">
+
+                <button
+                    data-mode="normal"
+                    class="control-button active">
+
+                    NORMAL
+
+                </button>
+
+                <button
+                    data-mode="warning"
+                    class="control-button">
+
+                    WARNING
+
+                </button>
+
+                <button
+                    data-mode="critical"
+                    class="control-button">
+
+                    CRITICAL
+
+                </button>
+
+            </div>
+
+        `;
+
+
+        document.body.appendChild(panel);
+
+
+        const buttons =
+            panel.querySelectorAll(
+                ".control-button"
+            );
+
+
+        buttons.forEach(function (button) {
+
+            button.addEventListener(
+                "click",
+                function () {
+
+                    simulationMode =
+                        button.dataset.mode;
+
+
+                    buttons.forEach(
+                        function (btn) {
+
+                            btn.classList.remove(
+                                "active"
+                            );
+
+                        }
+                    );
+
+
+                    button.classList.add(
+                        "active"
+                    );
+
+
+                    console.log(
+                        "Simulation mode:",
+                        simulationMode
+                    );
+
+                }
+            );
+
+        });
+
+    }
+
+
+    // ==========================================
+    // START CONTROL PANEL
+    // ==========================================
+
+    createControlPanel();
+
+
+    // ==========================================
+    // INITIAL UPDATE
     // ==========================================
 
     updateMachineData();
@@ -685,6 +733,5 @@ document.addEventListener("DOMContentLoaded", function () {
         updateMachineData,
         2000
     );
-
 
 });
