@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="stGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1677F2"/>
+      <stop offset="100%" stop-color="#0FAD9A"/>
+    </linearGradient>
+  </defs>
+  <!-- Background rounded squircle for tab contrast -->
+  <rect width="32" height="32" rx="7" fill="#FFFFFF"/>
+  <rect width="32" height="32" rx="7" fill="none" stroke="#E2EAF3" stroke-width="1.5"/>
+  <!-- Precision Gear / Spindle Silhouette -->
+  <g transform="translate(16, 16)">
+    <!-- Outer Gear teeth ring -->
+    <circle cx="0" cy="0" r="10.5" fill="none" stroke="url(#stGrad)" stroke-width="2.5"/>
+    <!-- Cardinal Spindle Poles -->
+    <path d="M 0 -11.5 L 0 -9 M 0 9 L 0 11.5 M -11.5 0 L -9 0 M 9 0 L 11.5 0" stroke="#1677F2" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Diagonal Spindle Poles -->
+    <path d="M -7.5 -7.5 L -5.8 -5.8 M 5.8 5.8 L 7.5 7.5 M 7.5 -7.5 L 5.8 -5.8 M -5.8 5.8 L -7.5 7.5" stroke="#0FAD9A" stroke-width="2" stroke-linecap="round"/>
+    <!-- Inner Core & Twin Nodes -->
+    <circle cx="0" cy="0" r="4.5" fill="#1677F2"/>
+    <circle cx="0" cy="0" r="2" fill="#FFFFFF"/>
+    <circle cx="-5" cy="0" r="1.4" fill="#0FAD9A"/>
+    <circle cx="5" cy="0" r="1.4" fill="#0FAD9A"/>
+  </g>
+</svg>
