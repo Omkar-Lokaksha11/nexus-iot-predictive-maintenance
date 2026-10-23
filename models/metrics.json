@@ -1,0 +1,67 @@
+{
+  "dataset_name": "UCI AI4I 2020 Predictive Maintenance Dataset",
+  "dataset_reference": "https://archive.ics.uci.edu/dataset/601/ai4i+2020+predictive+maintenance+dataset",
+  "model_architecture": "RandomForestClassifier (Balanced Ensemble)",
+  "features_used": [
+    "Type",
+    "Air temperature [K]",
+    "Process temperature [K]",
+    "Rotational speed [rpm]",
+    "Torque [Nm]",
+    "Tool wear [min]"
+  ],
+  "note_on_vibration": "Vibration is not an input feature in the UCI AI4I 2020 dataset and is not passed to the ML model. It is monitored separately as an external physical simulation.",
+  "random_state": 42,
+  "train_size": 8000,
+  "test_size": 2000,
+  "class_distribution": {
+    "total_samples": 10000,
+    "train_healthy": 7729,
+    "train_failure": 271,
+    "test_healthy": 1932,
+    "test_failure": 68,
+    "overall_failure_percentage": 3.39
+  },
+  "evaluation_metrics": {
+    "accuracy": 0.979,
+    "precision_failure_class": 0.7321,
+    "recall_failure_class": 0.6029,
+    "f1_score_failure_class": 0.6613,
+    "roc_auc": 0.959
+  },
+  "confusion_matrix": {
+    "matrix": [
+      [
+        1917,
+        15
+      ],
+      [
+        27,
+        41
+      ]
+    ],
+    "true_negatives_healthy_correct": 1917,
+    "false_positives_false_alarms": 15,
+    "false_negatives_missed_failures": 27,
+    "true_positives_failures_detected": 41
+  },
+  "failure_mode_distribution": {
+    "TWF": 46,
+    "HDF": 115,
+    "PWF": 95,
+    "OSF": 98,
+    "RNF": 19
+  },
+  "feature_importances": {
+    "Rotational speed [rpm]": 0.3055,
+    "Torque [Nm]": 0.298,
+    "Tool wear [min]": 0.202,
+    "Air temperature [K]": 0.1022,
+    "Process temperature [K]": 0.0716,
+    "Type_L": 0.01,
+    "Type_M": 0.0055,
+    "Type_H": 0.0051
+  },
+  "training_timestamp": "2026-10-23T21:16:34.415428",
+  "imbalance_handling_justification": "Because machine failures represent only ~3.4% of samples, standard accuracy can be misleading (a naive baseline predicting 0 for all instances achieves 96.6% accuracy but catches 0 failures). Using class_weight='balanced' penalizes missed failures, yielding a high Recall for failure events, which is crucial in industrial engineering to prevent catastrophic downtime."
+}

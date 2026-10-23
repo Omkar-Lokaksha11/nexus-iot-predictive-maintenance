@@ -1,0 +1,26 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+
+# Caches and virtual environments
+.pytest_cache/
+venv/
+env/
+ENV/
+.env
+
+# Temporary / local database logs
+*.sqlite3-journal
+
+# IDE and OS artifacts
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Node modules (if any leftover from legacy NEXUS)
+node_modules/
+npm-debug.log
