@@ -111,6 +111,13 @@ class SimulatorControlRequest(BaseModel):
     scenario: Optional[str] = Field(default=None, description="'normal', 'warning', 'hdf', 'pwf', 'twf', 'osf'")
     machine_type: Optional[str] = Field(default=None, description="'L', 'M', or 'H'")
 
+    @model_validator(mode="before")
+    def normalize_action(cls, values):
+        if isinstance(values, dict):
+            if not values.get("action") and values.get("command"):
+                values["action"] = values["command"]
+        return values
+
 
 class MaintenanceEventRequest(BaseModel):
     technician_name: str = Field(..., min_length=2, max_length=100)
@@ -276,6 +283,7 @@ def list_alerts(
 
 
 @app.post("/api/alerts/{alert_id}/acknowledge", tags=["Alerts"])
+@app.post("/api/alerts/{alert_id}/ack", tags=["Alerts"], include_in_schema=False)
 def acknowledge_existing_alert(alert_id: int):
     """Marks an alert as acknowledged by plant personnel."""
     updated = acknowledge_alert(alert_id)

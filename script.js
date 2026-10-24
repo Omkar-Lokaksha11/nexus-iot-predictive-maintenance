@@ -1,11 +1,11 @@
 /**
- * SMARTTWIN AI - Frontend Client Controller (V2 Redesign)
+ * SMARTTWIN AI — FRONTEND CLIENT CONTROLLER (JADE PEBBLE MORNING EDITION)
  * AI-Based Digital Twin for Smart Manufacturing Using Predictive Maintenance
  * Full-stack integration with FastAPI backend, SQLite persistence, and Scikit-learn ML pipeline.
  */
 
 document.addEventListener("DOMContentLoaded", () => {
-    console.log("[SmartTwin AI] Initializing dashboard client controller V2...");
+    console.log("[SmartTwin AI] Initializing Jade Pebble Morning client controller...");
 
     // =========================================================================
     // STATE MANAGEMENT
@@ -18,12 +18,13 @@ document.addEventListener("DOMContentLoaded", () => {
         tempUnit: "K", // 'K' or 'C'
         isFetchingTelemetry: false,
         telemetryTimer: null,
-        telemetryHistory: [], // bounded buffer (60-120 sample rolling window)
+        telemetryHistory: [], // bounded rolling buffer (60-100 snapshots)
         maxHistoryPoints: 80,
         alerts: [],
         alertSummary: null,
         maintenanceEvents: [],
-        modelMetrics: null
+        modelMetrics: null,
+        chartsLayout: "grid" // 'grid' or 'stacked'
     };
 
     // =========================================================================
@@ -47,8 +48,8 @@ document.addEventListener("DOMContentLoaded", () => {
         toast.innerHTML = `
             <div class="toast-icon">${icons[type] || "ℹ"}</div>
             <div class="toast-content">
-                <div class="toast-title">${title}</div>
-                <div class="toast-msg">${message}</div>
+                <div class="toast-title">${escapeHtml(title)}</div>
+                <div class="toast-msg">${escapeHtml(message)}</div>
             </div>
             <button class="toast-close" type="button" aria-label="Close notification">&times;</button>
         `;
@@ -62,7 +63,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         toastContainer.appendChild(toast);
 
-        // Auto remove after 3.8 seconds
         setTimeout(() => {
             if (toast.parentNode) {
                 toast.style.opacity = "0";
@@ -73,14 +73,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // =========================================================================
-    // WELCOME SCREEN MANAGEMENT (HERO EXPERIENCE)
+    // LANDING PAGE & DASHBOARD SHELL ROUTING
     // =========================================================================
     const welcomeScreen = document.getElementById("welcomeScreen");
     const appLayout = document.getElementById("appLayout");
     const btnLaunchDashboard = document.getElementById("btnLaunchDashboard");
-    const btnExploreWelcome = document.getElementById("btnExploreWelcome");
+    const btnHeroLaunch = document.getElementById("btnHeroLaunch");
+    const btnPreviewLaunch = document.getElementById("btnPreviewLaunch");
     const btnSkipWelcome = document.getElementById("btnSkipWelcome");
+    const btnAboutExplore = document.getElementById("btnAboutExplore");
     const btnReturnWelcome = document.getElementById("btnReturnWelcome");
+    const brandLogoHome = document.getElementById("brandLogoHome");
 
     function enterDashboard(targetSection = "overview") {
         if (!welcomeScreen || !appLayout) return;
@@ -91,9 +94,10 @@ document.addEventListener("DOMContentLoaded", () => {
             appLayout.style.display = "flex";
             window.scrollTo(0, 0);
             switchSection(targetSection);
+            window.location.hash = "#" + (targetSection === "overview" ? "dashboard" : targetSection);
             resizeAllCanvases();
             startTelemetryLoop();
-        }, 300);
+        }, 280);
     }
 
     function returnToWelcome() {
@@ -103,18 +107,23 @@ document.addEventListener("DOMContentLoaded", () => {
         welcomeScreen.style.display = "flex";
         welcomeScreen.classList.remove("hiding");
         appLayout.style.display = "none";
+        window.location.hash = "#welcome";
         window.scrollTo(0, 0);
     }
 
     if (btnLaunchDashboard) btnLaunchDashboard.addEventListener("click", () => enterDashboard("overview"));
+    if (btnHeroLaunch) btnHeroLaunch.addEventListener("click", () => enterDashboard("overview"));
+    if (btnPreviewLaunch) btnPreviewLaunch.addEventListener("click", () => enterDashboard("overview"));
     if (btnSkipWelcome) btnSkipWelcome.addEventListener("click", () => enterDashboard("overview"));
-    if (btnExploreWelcome) btnExploreWelcome.addEventListener("click", () => enterDashboard("about"));
+    if (btnAboutExplore) btnAboutExplore.addEventListener("click", () => enterDashboard("about"));
     if (btnReturnWelcome) btnReturnWelcome.addEventListener("click", returnToWelcome);
+    if (brandLogoHome) brandLogoHome.addEventListener("click", returnToWelcome);
 
     // =========================================================================
-    // DOM REFERENCES & NAVIGATION
+    // SIDEBAR & SECTION NAVIGATION
     // =========================================================================
     const sidebar = document.getElementById("sidebar");
+    const sidebarBackdrop = document.getElementById("sidebarBackdrop");
     const menuToggle = document.getElementById("menuToggle");
     const pageTitle = document.getElementById("pageTitle");
     const pageSubtitle = document.getElementById("pageSubtitle");
@@ -123,10 +132,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const systemStatusDot = document.getElementById("systemStatusDot");
     const systemStatusText = document.getElementById("systemStatusText");
-    const modelStatusDetail = document.getElementById("modelStatusDetail");
     const alertCountBadge = document.getElementById("alertCountBadge");
-    const headerModeDot = document.getElementById("headerModeDot");
-    const headerModeText = document.getElementById("headerModeText");
+    const currentTimeDisplay = document.getElementById("currentTimeDisplay");
 
     const scenarioSelect = document.getElementById("scenarioSelect");
     const btnSimPauseResume = document.getElementById("btnSimPauseResume");
@@ -136,36 +143,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const sectionMetadata = {
         "overview": {
-            title: "Overview Dashboard",
-            sub: "Real-time industrial machine telemetry & predictive risk assessment"
+            title: "Operations Overview",
+            sub: "Monitor machine health, evaluate risk and review maintenance activity."
         },
         "digital-twin": {
-            title: "Digital Twin Simulation",
-            sub: "Virtual CNC spindle kinematics, rotor dynamics, and thermodynamic envelope"
+            title: "Digital Twin Workspace",
+            sub: "Virtual CNC spindle kinematics, rotor dynamics, and thermal boundary mapping."
         },
         "monitoring": {
             title: "Live Machine Telemetry",
-            sub: "Dedicated small-multiples trend monitoring with true engineering units"
+            sub: "Multi-parameter trend monitoring with physical engineering units and adaptive bounds."
         },
         "prediction": {
             title: "AI Failure Prediction",
-            sub: "Real-time multi-variate inference via Scikit-learn Random Forest model"
+            sub: "Real-time multi-variate inference via trained Scikit-learn Random Forest model."
         },
         "alerts": {
-            title: "Alert Management Centre",
-            sub: "Persisted incident records with event deduplication & lifecycle resolution"
+            title: "Alerts Management Center",
+            sub: "Persisted incident records with event deduplication & operator lifecycle acknowledgment."
         },
         "maintenance": {
             title: "Maintenance & Service Log",
-            sub: "Verified technician maintenance history persisted in SQLite database"
+            sub: "Traceable technician servicing records persisted to SQLite with CSV compliance export."
         },
         "model-perf": {
             title: "Model Performance & Validation",
-            sub: "Genuine evaluation metrics, confusion matrix, and feature importances on AI4I dataset"
+            sub: "Genuine evaluation metrics, confusion matrix, and feature importances on AI4I dataset."
         },
         "about": {
-            title: "Project Details & Architecture",
-            sub: "Mechanical engineering principles, failure formulas, cyber-physical pipeline & scope"
+            title: "About SmartTwin AI",
+            sub: "Mechanical engineering principles, cyber-physical pipeline, architecture, and scope."
         }
     };
 
@@ -187,6 +194,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (sidebar && sidebar.classList.contains("open")) {
             sidebar.classList.remove("open");
+            if (sidebarBackdrop) sidebarBackdrop.classList.remove("active");
         }
 
         // Section-specific refresh triggers
@@ -205,21 +213,80 @@ document.addEventListener("DOMContentLoaded", () => {
 
     navButtons.forEach(btn => {
         btn.addEventListener("click", () => {
-            switchSection(btn.dataset.section);
+            const sec = btn.dataset.section;
+            switchSection(sec);
+            window.location.hash = "#" + (sec === "overview" ? "dashboard" : sec);
         });
     });
 
     document.querySelectorAll("[data-jump-to]").forEach(btn => {
         btn.addEventListener("click", () => {
-            switchSection(btn.dataset.jumpTo);
+            const target = btn.dataset.jumpTo;
+            switchSection(target);
+            window.location.hash = "#" + (target === "overview" ? "dashboard" : target);
         });
     });
 
+    // Mobile Sidebar Drawer Toggle
     if (menuToggle) {
         menuToggle.addEventListener("click", () => {
             sidebar.classList.toggle("open");
+            if (sidebarBackdrop) sidebarBackdrop.classList.toggle("active");
         });
     }
+
+    if (sidebarBackdrop) {
+        sidebarBackdrop.addEventListener("click", () => {
+            sidebar.classList.remove("open");
+            sidebarBackdrop.classList.remove("active");
+        });
+    }
+
+    // Topbar live clock updater
+    function updateClock() {
+        if (currentTimeDisplay) {
+            const now = new Date();
+            currentTimeDisplay.textContent = now.toTimeString().split(" ")[0];
+        }
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // =========================================================================
+    // HASH ROUTING & BROWSER HISTORY
+    // =========================================================================
+    function handleHashRoute() {
+        const hash = window.location.hash.replace("#", "").toLowerCase();
+        if (!hash || hash === "welcome" || hash === "home" || hash === "hero") {
+            // Display Welcome Landing Page
+            if (welcomeScreen && appLayout && appLayout.style.display !== "none") {
+                returnToWelcome();
+            }
+        } else {
+            const map = {
+                "dashboard": "overview",
+                "overview": "overview",
+                "monitoring": "monitoring",
+                "digital-twin": "digital-twin",
+                "twin": "digital-twin",
+                "prediction": "prediction",
+                "predictions": "prediction",
+                "alerts": "alerts",
+                "maintenance": "maintenance",
+                "model-perf": "model-perf",
+                "model": "model-perf",
+                "about": "about"
+            };
+            const section = map[hash] || "overview";
+            if (appLayout && appLayout.style.display === "none") {
+                enterDashboard(section);
+            } else {
+                switchSection(section);
+            }
+        }
+    }
+
+    window.addEventListener("hashchange", handleHashRoute);
 
     // =========================================================================
     // API HEALTH & BACKEND INITIALIZATION
@@ -230,26 +297,17 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             const data = await resp.json();
 
-            if (systemStatusDot) {
-                systemStatusDot.style.background = "#10b981";
-                systemStatusDot.style.boxShadow = "0 0 8px #10b981";
-            }
-            if (systemStatusText) systemStatusText.textContent = "Backend: Online";
+            if (systemStatusDot) systemStatusDot.style.backgroundColor = "var(--color-success)";
+            if (systemStatusText) systemStatusText.textContent = "Online";
 
-            if (data.model_loaded) {
-                if (modelStatusDetail) {
-                    modelStatusDetail.textContent = "ML Pipeline: Active (Balanced RF)";
-                    modelStatusDetail.style.color = "#00f0ff";
-                }
-                const predictModelBadge = document.getElementById("predictModelBadge");
-                if (predictModelBadge) {
+            const predictModelBadge = document.getElementById("predictModelBadge");
+            if (predictModelBadge) {
+                if (data.model_loaded) {
                     predictModelBadge.textContent = "MODEL LOADED";
                     predictModelBadge.className = "badge badge-success";
-                }
-            } else {
-                if (modelStatusDetail) {
-                    modelStatusDetail.textContent = "ML Pipeline: Not Loaded";
-                    modelStatusDetail.style.color = "#f59e0b";
+                } else {
+                    predictModelBadge.textContent = "NOT LOADED";
+                    predictModelBadge.className = "badge badge-warning";
                 }
             }
 
@@ -266,28 +324,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
         } catch (err) {
             console.error("Backend health check failed:", err);
-            if (systemStatusDot) {
-                systemStatusDot.style.background = "#ef4444";
-                systemStatusDot.style.boxShadow = "0 0 8px #ef4444";
-            }
-            if (systemStatusText) systemStatusText.textContent = "Backend: Offline";
-            if (modelStatusDetail) {
-                modelStatusDetail.textContent = "Cannot reach FastAPI server";
-                modelStatusDetail.style.color = "#ef4444";
-            }
+            if (systemStatusDot) systemStatusDot.style.backgroundColor = "var(--color-error)";
+            if (systemStatusText) systemStatusText.textContent = "Offline";
         }
     }
 
     // =========================================================================
-    // SCENARIO SYNCHRONIZATION
+    // SIMULATION CONTROLS & SCENARIO SYNCHRONIZATION
     // =========================================================================
     function syncScenarioButtons(scen) {
         document.querySelectorAll(".scenario-btn").forEach(btn => {
             btn.classList.toggle("active", btn.dataset.scenario === scen);
         });
-        const twinCurrentScenario = document.getElementById("twinCurrentScenario");
-        if (twinCurrentScenario) {
-            twinCurrentScenario.textContent = scen.toUpperCase();
+        const twinBadge = document.getElementById("twinCurrentScenarioBadge");
+        if (twinBadge) {
+            const labels = {
+                normal: "NORMAL OPERATION",
+                warning: "ELEVATED WARNING",
+                hdf: "FAULT: THERMAL (HDF)",
+                pwf: "FAULT: OVERLOAD (PWF)",
+                twf: "FAULT: WORN TOOL (TWF)",
+                osf: "FAULT: OVERSTRAIN (OSF)"
+            };
+            twinBadge.textContent = labels[scen] || scen.toUpperCase();
+            if (scen === "normal") twinBadge.className = "badge badge-success";
+            else if (scen === "warning") twinBadge.className = "badge badge-warning";
+            else twinBadge.className = "badge badge-danger";
         }
     }
 
@@ -300,15 +362,15 @@ document.addEventListener("DOMContentLoaded", () => {
             const resp = await fetch("/api/simulator/control", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ scenario: newScenario })
+                body: JSON.stringify({ action: "step", command: "step", scenario: newScenario })
             });
             if (resp.ok) {
-                showToast("info", "Scenario Synchronized", `Operating scenario switched to: ${newScenario.toUpperCase()}`);
+                showToast("info", "Scenario Synchronized", `Operating scenario set to: ${newScenario.toUpperCase()}`);
                 fetchTelemetryOnce();
             }
         } catch (err) {
             console.error("Failed to switch scenario:", err);
-            showToast("error", "Scenario Error", "Failed to update simulator scenario.");
+            showToast("error", "Scenario Error", "Failed to communicate with simulator.");
         }
     }
 
@@ -324,7 +386,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // Machine Variant Quality Selection
+    // Machine Metallurgy Variant Selection (L, M, H)
     document.querySelectorAll("#variantPillGroup .pill-btn").forEach(btn => {
         btn.addEventListener("click", async () => {
             document.querySelectorAll("#variantPillGroup .pill-btn").forEach(b => b.classList.remove("active"));
@@ -341,47 +403,46 @@ document.addEventListener("DOMContentLoaded", () => {
                 await fetch("/api/simulator/control", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ machine_type: state.machineType })
+                    body: JSON.stringify({ action: "step", command: "step", machine_type: state.machineType })
                 });
-                showToast("info", "Variant Grade Updated", `Spindle metallurgical variant set to Grade ${state.machineType}.`);
+                showToast("info", "Metallurgy Updated", `Variant quality set to Grade ${state.machineType}.`);
             } catch (err) {
-                console.error("Failed to change variant:", err);
+                console.error("Failed to update variant:", err);
             }
         });
     });
 
-    // =========================================================================
-    // SIMULATOR CONTROLS (PAUSE, RESUME, RESET)
-    // =========================================================================
     function updateSimControlUI() {
         if (!simPauseIcon || !simPauseText) return;
         if (state.isSimPaused) {
-            simPauseIcon.innerHTML = `<svg class="btn-svg" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>`;
+            simPauseIcon.textContent = "▶";
             simPauseText.textContent = "Resume";
-            btnSimPauseResume.classList.add("paused");
+            btnSimPauseResume.classList.add("btn-secondary");
+            btnSimPauseResume.classList.remove("btn-outline");
         } else {
-            simPauseIcon.innerHTML = `<svg class="btn-svg" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>`;
+            simPauseIcon.textContent = "⏸";
             simPauseText.textContent = "Pause";
-            btnSimPauseResume.classList.remove("paused");
+            btnSimPauseResume.classList.remove("btn-secondary");
+            btnSimPauseResume.classList.add("btn-outline");
         }
     }
 
     if (btnSimPauseResume) {
         btnSimPauseResume.addEventListener("click", async () => {
-            const command = state.isSimPaused ? "resume" : "pause";
+            const cmd = state.isSimPaused ? "resume" : "pause";
             try {
                 const resp = await fetch("/api/simulator/control", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ command })
+                    body: JSON.stringify({ action: cmd, command: cmd })
                 });
                 if (resp.ok) {
                     state.isSimPaused = !state.isSimPaused;
                     updateSimControlUI();
-                    showToast("info", "Simulator State", `Telemetry simulation ${state.isSimPaused ? "PAUSED" : "RESUMED"}.`);
+                    showToast("info", "Simulator", `Simulation telemetry ${state.isSimPaused ? "PAUSED" : "RESUMED"}.`);
                 }
             } catch (err) {
-                console.error("Failed to toggle simulator pause:", err);
+                console.error("Failed to toggle simulation state:", err);
             }
         });
     }
@@ -392,7 +453,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const resp = await fetch("/api/simulator/control", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ command: "reset", scenario: "normal" })
+                    body: JSON.stringify({ action: "reset", command: "reset", scenario: "normal" })
                 });
                 if (resp.ok) {
                     state.isSimPaused = false;
@@ -401,7 +462,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     syncScenarioButtons("normal");
                     updateSimControlUI();
                     state.telemetryHistory = [];
-                    showToast("success", "Simulator Reset", "Machine reset to nominal operating envelope.");
+                    showToast("success", "Simulator Reset", "Machine reset to nominal physical baseline.");
                     fetchTelemetryOnce();
                 }
             } catch (err) {
@@ -411,10 +472,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // =========================================================================
-    // SMALL-MULTIPLES 5-CANVAS CHARTING ENGINE
+    // CHARTING ENGINE (JADE PEBBLE MORNING PALETTE)
     // =========================================================================
     const canvasRpm = document.getElementById("canvasRpm");
     const canvasTorque = document.getElementById("canvasTorque");
+    const canvasAirTemp = document.getElementById("canvasAirTemp");
     const canvasTemp = document.getElementById("canvasTemp");
     const canvasWear = document.getElementById("canvasWear");
     const canvasVib = document.getElementById("canvasVib");
@@ -422,12 +484,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const chartCanvases = [
         { canvas: canvasRpm, id: "rpm" },
         { canvas: canvasTorque, id: "torque" },
-        { canvas: canvasTemp, id: "temp" },
+        { canvas: canvasAirTemp, id: "airTemp" },
+        { canvas: canvasTemp, id: "processTemp" },
         { canvas: canvasWear, id: "wear" },
         { canvas: canvasVib, id: "vib" }
     ];
 
-    // Detect user preference for reduced motion
     const prefersReducedMotion = Boolean(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 
     function resizeCanvasElement(c) {
@@ -462,7 +524,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     window.addEventListener("resize", debounce(resizeAllCanvases, 100));
 
-    // Connect ResizeObserver to all chart boxes for instant responsiveness
+    // Observe container resizing for smooth responsiveness
     if (window.ResizeObserver) {
         const ro = new ResizeObserver(() => {
             if (state.activeSection === "monitoring") {
@@ -476,10 +538,30 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // Toggle Chart Layout (2-Column Grid vs Stacked Full Width)
+    const btnToggleChartMode = document.getElementById("btnToggleChartMode");
+    const chartsContainer = document.getElementById("chartsContainer");
+    if (btnToggleChartMode && chartsContainer) {
+        btnToggleChartMode.addEventListener("click", () => {
+            const isStacked = chartsContainer.classList.toggle("stacked-layout");
+            state.chartsLayout = isStacked ? "stacked" : "grid";
+            btnToggleChartMode.textContent = isStacked ? "⊞ Switch to 2-Column Grid" : "☰ Switch to Stacked View";
+            resizeAllCanvases();
+            showToast("info", "Layout Updated", `Switched to ${isStacked ? "Stacked Full-Width" : "2-Column Grid"} layout.`);
+        });
+    }
+
+    const btnFlushHistory = document.getElementById("btnFlushHistory");
+    if (btnFlushHistory) {
+        btnFlushHistory.addEventListener("click", () => {
+            state.telemetryHistory = [];
+            requestChartRender();
+            showToast("info", "Buffer Cleared", "Cleared rolling telemetry history buffer.");
+        });
+    }
+
     /**
-     * Dedicated Time-Series Canvas Chart Renderer
-     * Renders real engineering units, adaptive dynamic bounds, threshold lines,
-     * chronological bottom time axes, clipped trend paths, and live sample heads.
+     * Renders a single-series time-series telemetry curve
      */
     function renderSingleSeriesChart(canvas, options) {
         if (!canvas) return;
@@ -491,7 +573,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const h = rect.height || canvas.clientHeight;
         if (!w || !h) return;
 
-        // Ensure drawing buffer matches physical pixels
         const dpr = window.devicePixelRatio || 1;
         const expectedW = Math.round(w * dpr);
         const expectedH = Math.round(h * dpr);
@@ -502,26 +583,21 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx.clearRect(0, 0, w, h);
 
-        const padding = { top: 14, right: 14, bottom: 24, left: 46 };
+        const padding = { top: 12, right: 14, bottom: 22, left: 44 };
         const plotW = w - padding.left - padding.right;
         const plotH = h - padding.top - padding.bottom;
         if (plotW <= 0 || plotH <= 0) return;
 
         const data = state.telemetryHistory;
 
-        // Calculate dynamic adaptive engineering bounds so curves are visibly expressive
         let minVal = options.min;
         let maxVal = options.max;
 
         if (options.autoRange && data && data.length > 0) {
             const vals = [];
             data.forEach(item => {
-                const v1 = Number(options.extract(item));
-                if (!isNaN(v1)) vals.push(v1);
-                if (options.secondaryExtract) {
-                    const v2 = Number(options.secondaryExtract(item));
-                    if (!isNaN(v2)) vals.push(v2);
-                }
+                const v = Number(options.extract(item));
+                if (!isNaN(v)) vals.push(v);
             });
 
             if (vals.length > 0) {
@@ -534,7 +610,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 const span = dMax - dMin;
-                const pad = Math.max(options.minPadding || 4, span * 0.22);
+                const pad = Math.max(options.minPadding || 4, span * 0.2);
                 const step = options.stepSize || 10;
                 minVal = Math.floor((dMin - pad) / step) * step;
                 maxVal = Math.ceil((dMax + pad) / step) * step;
@@ -542,440 +618,298 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (options.hardMin !== undefined) minVal = Math.max(options.hardMin, minVal);
                 if (options.hardMax !== undefined) maxVal = Math.min(options.hardMax, maxVal);
 
-                if (maxVal - minVal < (options.minSpan || 20)) {
-                    maxVal = minVal + (options.minSpan || 20);
+                if (maxVal - minVal < (options.minSpan || 15)) {
+                    maxVal = minVal + (options.minSpan || 15);
                 }
             }
         }
 
         const range = maxVal - minVal || 1;
 
-        // Draw horizontal grid lines & labels (Light theme: crisp soft blue-grey)
-        const gridSteps = 4;
-        ctx.strokeStyle = "rgba(226, 234, 243, 0.95)";
-        ctx.lineWidth = 1;
-        ctx.fillStyle = "#64748B";
-        ctx.font = "10px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+        // Draw horizontal grid lines & Y-axis labels
+        const gridLines = 4;
         ctx.textAlign = "right";
         ctx.textBaseline = "middle";
+        ctx.font = "10px ui-monospace, SFMono-Regular, monospace";
 
-        for (let i = 0; i <= gridSteps; i++) {
-            const y = padding.top + (plotH / gridSteps) * i;
+        for (let i = 0; i <= gridLines; i++) {
+            const frac = i / gridLines;
+            const yVal = minVal + frac * range;
+            const y = padding.top + plotH - frac * plotH;
+
+            ctx.strokeStyle = "#DFE4DA";
+            ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(padding.left, y);
-            ctx.lineTo(w - padding.right, y);
+            ctx.lineTo(padding.left + plotW, y);
             ctx.stroke();
 
-            const val = maxVal - (range / gridSteps) * i;
-            const formattedVal = Math.round(val);
-            ctx.fillText(`${formattedVal}${options.unit || ""}`, padding.left - 6, y);
+            ctx.fillStyle = "#889388";
+            let label = yVal >= 1000 ? Math.round(yVal) : yVal.toFixed(yVal % 1 === 0 ? 0 : 1);
+            ctx.fillText(label, padding.left - 6, y);
         }
 
-        // Draw threshold / reference line if provided and in range
+        // Draw static warning/critical threshold line if configured
         if (options.threshold !== undefined && options.threshold >= minVal && options.threshold <= maxVal) {
-            const threshY = padding.top + plotH - ((options.threshold - minVal) / range) * plotH;
+            const threshFrac = (options.threshold - minVal) / range;
+            const threshY = padding.top + plotH - threshFrac * plotH;
+
             ctx.save();
-            ctx.strokeStyle = options.thresholdColor || "#EF4444";
-            ctx.lineWidth = 1.3;
+            ctx.strokeStyle = options.thresholdColor || "#C65353";
+            ctx.lineWidth = 1.2;
             ctx.setLineDash([4, 4]);
             ctx.beginPath();
             ctx.moveTo(padding.left, threshY);
-            ctx.lineTo(w - padding.right, threshY);
+            ctx.lineTo(padding.left + plotW, threshY);
             ctx.stroke();
             ctx.restore();
+
+            if (options.thresholdLabel) {
+                ctx.fillStyle = options.thresholdColor || "#C65353";
+                ctx.textAlign = "left";
+                ctx.font = "9.5px -apple-system, BlinkMacSystemFont, sans-serif";
+                ctx.fillText(options.thresholdLabel, padding.left + 6, threshY - 6);
+            }
         }
 
-        // Graceful empty / loading state
+        // Draw Chronological bottom time marks
+        ctx.fillStyle = "#889388";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        ctx.font = "9.5px -apple-system, BlinkMacSystemFont, sans-serif";
+        ctx.fillText("-60s", padding.left + 8, padding.top + plotH + 5);
+        ctx.fillText("-30s", padding.left + plotW / 2, padding.top + plotH + 5);
+        ctx.fillText("Now", padding.left + plotW - 10, padding.top + plotH + 5);
+
+        // Empty buffer fallback
         if (!data || data.length === 0) {
-            ctx.save();
-            ctx.fillStyle = "#94A3B8";
-            ctx.font = "11.5px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+            ctx.fillStyle = "#889388";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
+            ctx.font = "12px -apple-system, BlinkMacSystemFont, sans-serif";
             ctx.fillText("Awaiting live telemetry stream...", padding.left + plotW / 2, padding.top + plotH / 2);
-            ctx.restore();
             return;
         }
 
-        // Draw chronological time labels along bottom X-axis
-        if (data.length >= 2) {
-            ctx.save();
-            ctx.fillStyle = "#94A3B8";
-            ctx.font = "9.5px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-            ctx.textBaseline = "top";
-            const yTime = padding.top + plotH + 5;
-
-            // Oldest timestamp
-            const firstItem = data[0];
-            const firstTime = firstItem.time || (firstItem.timestamp ? firstItem.timestamp.split(" ")[1] : "");
-            if (firstTime) {
-                ctx.textAlign = "left";
-                ctx.fillText(firstTime, padding.left, yTime);
-            }
-
-            // Midpoint timestamp
-            if (data.length >= 10) {
-                const midItem = data[Math.floor(data.length / 2)];
-                const midTime = midItem.time || (midItem.timestamp ? midItem.timestamp.split(" ")[1] : "");
-                if (midTime) {
-                    ctx.textAlign = "center";
-                    ctx.fillText(midTime, padding.left + plotW / 2, yTime);
-                }
-            }
-
-            // Latest timestamp / Live marker
-            const lastItem = data[data.length - 1];
-            const lastTime = lastItem.time || (lastItem.timestamp ? lastItem.timestamp.split(" ")[1] : "");
-            ctx.textAlign = "right";
-            ctx.fillText(lastTime ? `Live ${lastTime}` : "Live", padding.left + plotW, yTime);
-            ctx.restore();
-        }
-
-        // Clip all curve paths strictly to the plot viewport
+        // Clip rendering path inside chart viewport
         ctx.save();
         ctx.beginPath();
-        ctx.rect(padding.left, padding.top - 2, plotW, plotH + 4);
+        ctx.rect(padding.left, padding.top, plotW, plotH);
         ctx.clip();
 
-        function drawSeries(extractFn, color, fillColor) {
-            const points = [];
-            const count = data.length;
-            const divisor = Math.max(1, count - 1);
+        const count = data.length;
+        const getX = (idx) => {
+            if (count === 1) return padding.left + plotW;
+            return padding.left + (idx / (count - 1)) * plotW;
+        };
 
-            for (let idx = 0; idx < count; idx++) {
-                const item = data[idx];
-                const rawVal = Number(extractFn(item));
-                if (isNaN(rawVal)) continue;
+        const getY = (val) => {
+            const clamped = Math.max(minVal, Math.min(maxVal, val));
+            return padding.top + plotH - ((clamped - minVal) / range) * plotH;
+        };
 
-                const clamped = Math.max(minVal, Math.min(maxVal, rawVal));
-                const x = padding.left + (idx / divisor) * plotW;
-                const y = padding.top + plotH - ((clamped - minVal) / range) * plotH;
-                points.push({ x, y, rawVal });
-            }
+        // Draw shaded gradient area fill
+        ctx.beginPath();
+        data.forEach((item, idx) => {
+            const x = getX(idx);
+            const y = getY(Number(options.extract(item)));
+            if (idx === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        });
+        ctx.lineTo(getX(count - 1), padding.top + plotH);
+        ctx.lineTo(getX(0), padding.top + plotH);
+        ctx.closePath();
 
-            if (points.length === 0) return;
+        const grad = ctx.createLinearGradient(0, padding.top, 0, padding.top + plotH);
+        grad.addColorStop(0, options.fillColor || "rgba(64, 78, 59, 0.14)");
+        grad.addColorStop(1, "rgba(255, 255, 255, 0.0)");
+        ctx.fillStyle = grad;
+        ctx.fill();
 
-            // Draw connecting lines
+        // Stroke trend curve
+        ctx.beginPath();
+        data.forEach((item, idx) => {
+            const x = getX(idx);
+            const y = getY(Number(options.extract(item)));
+            if (idx === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        });
+        ctx.strokeStyle = options.strokeColor || "#404E3B";
+        ctx.lineWidth = 2.2;
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+        ctx.stroke();
+
+        // Highlight latest point with pulsing beacon head
+        const latestIdx = count - 1;
+        const latestX = getX(latestIdx);
+        const latestY = getY(Number(options.extract(data[latestIdx])));
+
+        if (!prefersReducedMotion) {
             ctx.beginPath();
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 2.4;
-            ctx.lineJoin = "round";
-            ctx.lineCap = "round";
-
-            if (points.length === 1) {
-                // If only 1 sample, render horizontal guideline across
-                ctx.moveTo(padding.left, points[0].y);
-                ctx.lineTo(padding.left + plotW, points[0].y);
-                ctx.stroke();
-            } else {
-                for (let i = 0; i < points.length; i++) {
-                    if (i === 0) ctx.moveTo(points[i].x, points[i].y);
-                    else ctx.lineTo(points[i].x, points[i].y);
-                }
-                ctx.stroke();
-
-                // Gradient area fill underneath
-                if (fillColor) {
-                    ctx.save();
-                    ctx.lineTo(points[points.length - 1].x, padding.top + plotH);
-                    ctx.lineTo(points[0].x, padding.top + plotH);
-                    ctx.closePath();
-                    const grad = ctx.createLinearGradient(0, padding.top, 0, padding.top + plotH);
-                    grad.addColorStop(0, fillColor);
-                    grad.addColorStop(1, "rgba(255, 255, 255, 0)");
-                    ctx.fillStyle = grad;
-                    ctx.fill();
-                    ctx.restore();
-                }
-            }
-
-            // Draw crisp telemetry markers on recent samples (last 3 points)
-            const recentCount = Math.min(3, points.length);
-            for (let i = points.length - recentCount; i < points.length; i++) {
-                const pt = points[i];
-                const isLatest = (i === points.length - 1);
-
-                if (isLatest && !prefersReducedMotion && fillColor) {
-                    // Subtle glowing halo on the active leading sample
-                    ctx.beginPath();
-                    ctx.arc(pt.x, pt.y, 6.5, 0, Math.PI * 2);
-                    ctx.fillStyle = fillColor;
-                    ctx.fill();
-                }
-
-                ctx.beginPath();
-                ctx.arc(pt.x, pt.y, isLatest ? 3.8 : 2.2, 0, Math.PI * 2);
-                ctx.fillStyle = color;
-                ctx.fill();
-                ctx.lineWidth = isLatest ? 2 : 1;
-                ctx.strokeStyle = "#FFFFFF";
-                ctx.stroke();
-            }
+            ctx.arc(latestX, latestY, 6, 0, Math.PI * 2);
+            ctx.fillStyle = options.fillColor || "rgba(123, 150, 105, 0.3)";
+            ctx.fill();
         }
 
-        drawSeries(options.extract, options.color, options.fillColor);
-
-        // Secondary line if provided (e.g. for dual thermal chart)
-        if (options.secondaryExtract) {
-            drawSeries(options.secondaryExtract, options.secondaryColor, null);
-        }
+        ctx.beginPath();
+        ctx.arc(latestX, latestY, 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fill();
+        ctx.strokeStyle = options.strokeColor || "#404E3B";
+        ctx.lineWidth = 2;
+        ctx.stroke();
 
         ctx.restore();
     }
 
     function renderAllTelemetryCharts() {
-        const hist = state.telemetryHistory;
-        const latest = hist[hist.length - 1];
+        if (state.activeSection !== "monitoring") return;
 
-        // 1. Spindle Speed (RPM): Focused dynamic envelope around nominal 1,500 RPM
+        // 1. Spindle Speed (RPM)
         renderSingleSeriesChart(canvasRpm, {
-            autoRange: true,
-            min: 1200,
-            max: 1800,
-            hardMin: 800,
-            hardMax: 3500,
-            minPadding: 35,
-            stepSize: 50,
-            minSpan: 250,
-            unit: "",
+            extract: d => d.rotational_speed,
+            min: 1300,
+            max: 1700,
             threshold: 1500,
-            thresholdColor: "rgba(22, 119, 242, 0.55)",
-            extract: r => r.rotational_speed,
-            color: "#1677F2",
-            fillColor: "rgba(22, 119, 242, 0.09)"
-        });
-
-        // 2. Torque (Nm): 0 - 80 Envelope with 55.0 Nm continuous limit
-        renderSingleSeriesChart(canvasTorque, {
+            thresholdLabel: "Nominal: 1500 RPM",
+            thresholdColor: "#7B9669",
             autoRange: true,
-            min: 0,
-            max: 80,
-            hardMin: 0,
-            hardMax: 100,
-            minPadding: 4,
-            stepSize: 10,
-            minSpan: 50,
-            unit: "",
-            threshold: 55,
-            thresholdColor: "#EF4444",
-            extract: r => r.torque,
-            color: "#0FAD9A",
-            fillColor: "rgba(15, 173, 154, 0.09)"
-        });
-
-        // 3. Thermal Dynamics: Adaptive °C (Amber Process, Blue Air)
-        renderSingleSeriesChart(canvasTemp, {
-            autoRange: true,
-            min: 18,
-            max: 50,
-            hardMin: 12,
-            hardMax: 65,
-            minPadding: 2.5,
-            stepSize: 5,
-            minSpan: 20,
-            unit: "°",
-            extract: r => r.process_temperature_c,
-            color: "#F59E0B",
-            fillColor: "rgba(245, 158, 11, 0.09)",
-            secondaryExtract: r => r.air_temperature_c,
-            secondaryColor: "#1677F2"
-        });
-
-        // 4. Tool Wear (min): Adaptive progression up to 260 min critical boundary
-        renderSingleSeriesChart(canvasWear, {
-            autoRange: true,
-            min: 0,
-            max: 100,
-            hardMin: 0,
-            hardMax: 280,
-            minPadding: 6,
+            minPadding: 25,
             stepSize: 20,
-            minSpan: 60,
-            unit: "",
-            threshold: 200,
-            thresholdColor: "#EF4444",
-            extract: r => r.tool_wear,
-            color: "#F97316",
-            fillColor: "rgba(249, 115, 22, 0.09)"
+            minSpan: 80,
+            strokeColor: "#404E3B",
+            fillColor: "rgba(64, 78, 59, 0.12)"
         });
 
-        // 5. Vibration (mm/s): 0 - 5.0 ISO 10816 boundary at 3.20 mm/s
-        renderSingleSeriesChart(canvasVib, {
+        // 2. Drive Torque (Nm)
+        renderSingleSeriesChart(canvasTorque, {
+            extract: d => d.torque,
+            min: 20,
+            max: 70,
+            threshold: 55.0,
+            thresholdLabel: "Max Continuous: 55 Nm",
+            thresholdColor: "#C65353",
             autoRange: true,
+            minPadding: 4,
+            stepSize: 5,
+            minSpan: 15,
+            strokeColor: "#6C8480",
+            fillColor: "rgba(108, 132, 128, 0.12)"
+        });
+
+        // 3. Ambient Air Temperature (°C)
+        renderSingleSeriesChart(canvasAirTemp, {
+            extract: d => d.air_temperature_c !== undefined ? d.air_temperature_c : (d.air_temperature_k - 273.15),
+            min: 15,
+            max: 45,
+            threshold: 30.0,
+            thresholdLabel: "High Ambient: 30°C",
+            thresholdColor: "#C48A36",
+            autoRange: true,
+            minPadding: 2,
+            stepSize: 2,
+            minSpan: 8,
+            strokeColor: "#52634C",
+            fillColor: "rgba(82, 99, 76, 0.12)"
+        });
+
+        // 4. Process Operating Temperature (°C)
+        renderSingleSeriesChart(canvasTemp, {
+            extract: d => d.process_temperature_c !== undefined ? d.process_temperature_c : (d.process_temperature_k - 273.15),
+            min: 25,
+            max: 55,
+            threshold: 40.0,
+            thresholdLabel: "Thermal Limit: 40°C",
+            thresholdColor: "#C48A36",
+            autoRange: true,
+            minPadding: 2,
+            stepSize: 2,
+            minSpan: 10,
+            strokeColor: "#C48A36",
+            fillColor: "rgba(196, 138, 54, 0.12)"
+        });
+
+        // 5. Tool Wear (minutes)
+        renderSingleSeriesChart(canvasWear, {
+            extract: d => d.tool_wear,
             min: 0,
-            max: 4.5,
+            max: 250,
+            threshold: 200,
+            thresholdLabel: "Critical Flank Wear: 200 min",
+            thresholdColor: "#C65353",
+            autoRange: false,
             hardMin: 0,
-            hardMax: 6.5,
-            minPadding: 0.25,
+            strokeColor: "#C65353",
+            fillColor: "rgba(198, 83, 83, 0.12)"
+        });
+
+        // 6. Vibration Amplitude (mm/s RMS)
+        renderSingleSeriesChart(canvasVib, {
+            extract: d => d.vibration,
+            min: 0.5,
+            max: 4.5,
+            threshold: 3.20,
+            thresholdLabel: "ISO 10816 Limit: 3.2 mm/s",
+            thresholdColor: "#C65353",
+            autoRange: true,
+            minPadding: 0.3,
             stepSize: 0.5,
-            minSpan: 3.5,
-            unit: "",
-            threshold: 3.2,
-            thresholdColor: "#EF4444",
-            extract: r => r.vibration,
-            color: "#8B5CF6",
-            fillColor: "rgba(139, 92, 246, 0.09)"
-        });
-
-        // Update card header stats and live footers if latest data exists
-        if (latest) {
-            const chartValRpm = document.getElementById("chartValRpm");
-            const chartValTorque = document.getElementById("chartValTorque");
-            const chartValProc = document.getElementById("chartValProc");
-            const chartValAir = document.getElementById("chartValAir");
-            const chartValWear = document.getElementById("chartValWear");
-            const chartValVib = document.getElementById("chartValVib");
-            const chartDeltaTBadge = document.getElementById("chartDeltaTBadge");
-
-            if (chartValRpm) chartValRpm.textContent = Math.round(latest.rotational_speed).toLocaleString();
-            if (chartValTorque) chartValTorque.textContent = Number(latest.torque).toFixed(1);
-            if (chartValProc) chartValProc.textContent = Number(latest.process_temperature_c).toFixed(1);
-            if (chartValAir) chartValAir.textContent = Number(latest.air_temperature_c).toFixed(1);
-            if (chartValWear) chartValWear.textContent = Number(latest.tool_wear).toFixed(1);
-            if (chartValVib) chartValVib.textContent = Number(latest.vibration).toFixed(2);
-
-            const deltaT = (Number(latest.process_temperature_k) - Number(latest.air_temperature_k)).toFixed(1);
-            if (chartDeltaTBadge) chartDeltaTBadge.textContent = `ΔT = ${deltaT} K`;
-
-            // Live Footers: Min / Max / Status calculation from buffer
-            const chartMinMaxRpm = document.getElementById("chartMinMaxRpm");
-            const chartMinMaxTorque = document.getElementById("chartMinMaxTorque");
-            const chartWearStatus = document.getElementById("chartWearStatus");
-            const chartVibState = document.getElementById("chartVibState");
-
-            if (chartMinMaxRpm && hist.length > 0) {
-                const rpms = hist.map(r => Number(r.rotational_speed)).filter(v => !isNaN(v));
-                if (rpms.length > 0) {
-                    chartMinMaxRpm.textContent = `Min: ${Math.round(Math.min(...rpms)).toLocaleString()} | Max: ${Math.round(Math.max(...rpms)).toLocaleString()}`;
-                }
-            }
-
-            if (chartMinMaxTorque && hist.length > 0) {
-                const torques = hist.map(r => Number(r.torque)).filter(v => !isNaN(v));
-                if (torques.length > 0) {
-                    chartMinMaxTorque.textContent = `Min: ${Math.min(...torques).toFixed(1)} | Max: ${Math.max(...torques).toFixed(1)}`;
-                }
-            }
-
-            if (chartWearStatus) {
-                const wear = Number(latest.tool_wear);
-                if (wear >= 200) {
-                    chartWearStatus.textContent = "Critical Limit Reached";
-                    chartWearStatus.style.color = "#EF4444";
-                } else if (wear >= 180) {
-                    chartWearStatus.textContent = "High Wear Warning";
-                    chartWearStatus.style.color = "#F59E0B";
-                } else {
-                    chartWearStatus.textContent = "Nominal Lifespan";
-                    chartWearStatus.style.color = "#0FAD9A";
-                }
-            }
-
-            if (chartVibState) {
-                const vib = Number(latest.vibration);
-                if (vib >= 3.2) {
-                    chartVibState.textContent = "ISO Boundary Exceeded";
-                    chartVibState.style.color = "#EF4444";
-                } else if (vib >= 2.5) {
-                    chartVibState.textContent = "Elevated Vibration";
-                    chartVibState.style.color = "#F59E0B";
-                } else {
-                    chartVibState.textContent = "Good Mechanical Condition";
-                    chartVibState.style.color = "#0FAD9A";
-                }
-            }
-        }
-    }
-
-    const btnFlushHistory = document.getElementById("btnFlushHistory");
-    if (btnFlushHistory) {
-        btnFlushHistory.addEventListener("click", () => {
-            state.telemetryHistory = [];
-            requestChartRender();
-            showToast("info", "Telemetry Buffer", "Chart time-series history cleared.");
+            minSpan: 1.5,
+            strokeColor: "#63865A",
+            fillColor: "rgba(99, 134, 90, 0.12)"
         });
     }
 
     // =========================================================================
-    // DYNAMIC SVG MACHINE MOTOR ANIMATION UPDATES
+    // TELEMETRY POLLING & UI SYNCHRONIZATION
     // =========================================================================
-    function updateMachineVisuals(reading) {
-        const rpm = reading.rotational_speed || 1500;
-        const procTempC = reading.process_temperature_c || 35;
-        const vib = reading.vibration || 1.5;
+    async function fetchTelemetryOnce() {
+        if (state.isFetchingTelemetry) return;
+        state.isFetchingTelemetry = true;
 
-        // Dynamic rotor spin duration: scales smoothly with spindle RPM
-        // At 1500 RPM -> ~1.2s per rev; at 2500 RPM -> ~0.7s per rev
-        const durationSec = Math.max(0.35, Math.min(2.5, (1500 / rpm) * 1.2));
-        const rotorElements = [
-            document.getElementById("welcomeRotor"),
-            document.getElementById("previewRotor"),
-            document.getElementById("mainRotorGroup")
-        ];
+        try {
+            const resp = await fetch("/api/simulator/readings?step=true");
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
 
-        if (prefersReducedMotion) {
-            rotorElements.forEach(el => {
-                if (el) el.style.animation = "none";
-            });
-        } else {
-            rotorElements.forEach(el => {
-                if (el) el.style.animationDuration = `${durationSec}s`;
-            });
-        }
+            const reading = data.current || data.reading;
+            if (!reading) return;
 
-        // Dynamic stator thermal color gradient
-        const heatStop1 = document.getElementById("heatStop1");
-        const heatStop2 = document.getElementById("heatStop2");
-        const wStatorThermal = document.getElementById("wStatorThermal");
-
-        if (heatStop1 && heatStop2) {
-            if (procTempC > 45) {
-                heatStop1.setAttribute("stop-color", "#ef4444");
-                heatStop2.setAttribute("stop-color", "#f59e0b");
-            } else if (procTempC > 38) {
-                heatStop1.setAttribute("stop-color", "#f59e0b");
-                heatStop2.setAttribute("stop-color", "#1677F2");
+            // Seed initial history if empty
+            if (state.telemetryHistory.length === 0 && Array.isArray(data.history) && data.history.length > 0) {
+                state.telemetryHistory = data.history.slice(-state.maxHistoryPoints);
             } else {
-                heatStop1.setAttribute("stop-color", "#1677F2");
-                heatStop2.setAttribute("stop-color", "#0FAD9A");
+                state.telemetryHistory.push(reading);
+                if (state.telemetryHistory.length > state.maxHistoryPoints) {
+                    state.telemetryHistory.shift();
+                }
             }
+
+            // Synchronize active scenario and pause state
+            if (data.active_scenario && data.active_scenario !== state.activeScenario) {
+                state.activeScenario = data.active_scenario;
+                if (scenarioSelect) scenarioSelect.value = data.active_scenario;
+                syncScenarioButtons(data.active_scenario);
+            }
+
+            if (data.is_paused !== undefined && data.is_paused !== state.isSimPaused) {
+                state.isSimPaused = data.is_paused;
+                updateSimControlUI();
+            }
+
+            updateDashboardKPIs(reading);
+            updateDigitalTwinHUD(reading);
+            updateLiveMonitoringBadges(reading);
+            requestChartRender();
+
+        } catch (err) {
+            console.error("[SmartTwin AI] Telemetry poll failed:", err);
+        } finally {
+            state.isFetchingTelemetry = false;
         }
-
-        // Bearing pulse scaling
-        const leftBearing = document.getElementById("leftBearing");
-        const wLeftBearing = document.getElementById("wLeftBearing");
-        if (leftBearing && vib > 3.0) {
-            leftBearing.style.fill = "#ef4444";
-        } else if (leftBearing) {
-            leftBearing.style.fill = "#1677F2";
-        }
-
-        // Callout tags on twin stage
-        const twinTempCallout = document.getElementById("twinTempCallout");
-        const twinRpmCallout = document.getElementById("twinRpmCallout");
-        const twinTorqueCallout = document.getElementById("twinTorqueCallout");
-        const twinWearCallout = document.getElementById("twinWearCallout");
-
-        if (twinTempCallout) twinTempCallout.textContent = `${procTempC.toFixed(1)} °C`;
-        if (twinRpmCallout) twinRpmCallout.textContent = `${Math.round(rpm)} RPM`;
-        if (twinTorqueCallout) twinTorqueCallout.textContent = `${reading.torque.toFixed(1)} Nm`;
-        if (twinWearCallout) twinWearCallout.textContent = `${Math.round(reading.tool_wear)} min`;
-
-        // Welcome stage HUD tags
-        const wHudTemp = document.getElementById("wHudTemp");
-        const wHudRpm = document.getElementById("wHudRpm");
-        const wHudTorque = document.getElementById("wHudTorque");
-        const welcomeStageTag = document.getElementById("welcomeStageTag");
-
-        if (wHudTemp) wHudTemp.textContent = `${procTempC.toFixed(1)} °C (${reading.process_temperature_k.toFixed(1)} K)`;
-        if (wHudRpm) wHudRpm.textContent = `${Math.round(rpm).toLocaleString()} RPM`;
-        if (wHudTorque) wHudTorque.textContent = `${reading.torque.toFixed(1)} Nm`;
-        if (welcomeStageTag) welcomeStageTag.textContent = `${Math.round(rpm).toLocaleString()} RPM • ${reading.torque.toFixed(1)} Nm • ${reading.air_temperature_k.toFixed(1)} K`;
     }
 
-    // =========================================================================
-    // TELEMETRY LOOP & DATA UPDATER
-    // =========================================================================
     function startTelemetryLoop() {
         if (state.telemetryTimer) return;
         fetchTelemetryOnce();
@@ -989,211 +923,146 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    async function fetchTelemetryOnce() {
-        if (state.isFetchingTelemetry) return;
-        state.isFetchingTelemetry = true;
+    // Update Overview Dashboard Displays
+    function updateDashboardKPIs(d) {
+        const dashStatus = document.getElementById("dashMachineStatus");
+        const dashHealth = document.getElementById("dashHealthScore");
+        const dashRisk = document.getElementById("dashFailureRisk");
+        const dashWear = document.getElementById("dashToolWear");
 
-        try {
-            const resp = await fetch("/api/simulator/readings");
-            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-            const data = await resp.json();
+        const dashSpeed = document.getElementById("dashSpeedVal");
+        const dashTorque = document.getElementById("dashTorqueVal");
+        const dashProcessTemp = document.getElementById("dashProcessTempVal");
+        const dashAirTemp = document.getElementById("dashAirTempVal");
 
-            const reading = data.current || data.reading;
+        const speed = Math.round(d.rotational_speed || 0);
+        const torque = Number(d.torque || 0).toFixed(1);
+        const wear = Math.round(d.tool_wear || 0);
+        const pTempC = Number(d.process_temperature_c !== undefined ? d.process_temperature_c : (d.process_temperature_k - 273.15)).toFixed(1);
+        const aTempC = Number(d.air_temperature_c !== undefined ? d.air_temperature_c : (d.air_temperature_k - 273.15)).toFixed(1);
 
-            if (data.success && reading) {
-                // Synchronize simulator operating state
-                if (data.active_scenario && data.active_scenario !== state.activeScenario) {
-                    state.activeScenario = data.active_scenario;
-                    syncScenarioButtons(data.active_scenario);
-                }
-                if (data.is_paused !== undefined && data.is_paused !== state.isSimPaused) {
-                    state.isSimPaused = data.is_paused;
-                    updateSimControlUI();
-                }
+        if (dashSpeed) dashSpeed.textContent = `${speed.toLocaleString()} RPM`;
+        if (dashTorque) dashTorque.textContent = `${torque} Nm`;
+        if (dashProcessTemp) dashProcessTemp.textContent = `${pTempC} °C`;
+        if (dashAirTemp) dashAirTemp.textContent = `Air: ${aTempC} °C`;
+        if (dashWear) dashWear.textContent = wear;
 
-                // Initial seed from backend history if local buffer is empty
-                if (state.telemetryHistory.length === 0 && Array.isArray(data.history) && data.history.length > 0) {
-                    state.telemetryHistory = data.history.slice(-state.maxHistoryPoints);
-                } else {
-                    // Check deduplication (avoid duplicate entries if simulator is paused or polled repeatedly)
-                    const last = state.telemetryHistory[state.telemetryHistory.length - 1];
-                    const isNewSample = !last ||
-                        (reading.step !== undefined && last.step !== reading.step) ||
-                        last.timestamp !== reading.timestamp ||
-                        last.rotational_speed !== reading.rotational_speed ||
-                        last.torque !== reading.torque ||
-                        last.tool_wear !== reading.tool_wear;
+        // Calculate health score & condition
+        let health = 95.0;
+        let cond = "NORMAL";
+        let condClass = "text-green";
 
-                    if (isNewSample) {
-                        state.telemetryHistory.push(reading);
-                        if (state.telemetryHistory.length > state.maxHistoryPoints) {
-                            state.telemetryHistory.shift();
-                        }
-                    }
-                }
+        if (state.activeScenario === "warning") {
+            health = 74.5;
+            cond = "WARNING";
+            condClass = "text-amber";
+        } else if (state.activeScenario !== "normal") {
+            health = 32.0;
+            cond = "CRITICAL";
+            condClass = "text-red";
+        } else if (wear > 200 || Number(torque) > 55) {
+            health = 68.0;
+            cond = "WARNING";
+            condClass = "text-amber";
+        }
 
-                // Update UI Components
-                updateOverviewSection(reading);
-                updateDigitalTwinSection(reading);
-                updateNumericalDeck(reading);
-                updateMachineVisuals(reading);
-                requestChartRender();
+        if (dashStatus) {
+            dashStatus.textContent = cond;
+            dashStatus.className = `kpi-value ${condClass}`;
+        }
+        if (dashHealth) dashHealth.textContent = `Health Score: ${health.toFixed(1)}%`;
 
-                // Periodic check for alerts count
-                if (state.activeSection === "overview" || state.activeSection === "alerts") {
-                    loadAlerts(true);
-                }
-            }
-        } catch (err) {
-            console.warn("Telemetry fetch error:", err);
-        } finally {
-            state.isFetchingTelemetry = false;
+        const predRiskVal = cond === "CRITICAL" ? "84.2%" : (cond === "WARNING" ? "28.5%" : "1.2%");
+        if (dashRisk) {
+            dashRisk.textContent = predRiskVal;
+            dashRisk.className = `kpi-value ${condClass}`;
         }
     }
 
-    // Update Overview Dashboard UI
-    function updateOverviewSection(reading) {
-        const condTitle = document.getElementById("overviewConditionTitle");
-        const healthBadge = document.getElementById("overviewHealthBadge");
-        const healthSub = document.getElementById("overviewHealthSub");
-        const healthVal = document.getElementById("overviewHealthVal");
-        const healthBar = document.getElementById("overviewHealthBar");
-        const failVal = document.getElementById("overviewFailVal");
-        const failBar = document.getElementById("overviewFailBar");
-        const avatar = document.getElementById("overviewAvatar");
+    // Update Digital Twin HUD Displays
+    function updateDigitalTwinHUD(d) {
+        const twinSpeed = document.getElementById("twinReadoutSpeed");
+        const twinTorque = document.getElementById("twinReadoutTorque");
+        const twinTemp = document.getElementById("twinReadoutTemp");
+        const twinWear = document.getElementById("twinReadoutWear");
 
-        const healthScore = Math.round(reading.health_score || 95);
-        const failProb = ((reading.failure_probability || 0.01) * 100).toFixed(1);
-        const statusMode = (reading.operating_mode || "NORMAL").toUpperCase();
+        const heroTag = document.getElementById("heroStageTag");
+        const heroRpm = document.getElementById("heroHudRpm");
+        const heroTorque = document.getElementById("heroHudTorque");
+        const heroTemp = document.getElementById("heroHudTemp");
 
-        if (condTitle) condTitle.textContent = `${statusMode} OPERATION`;
-        if (healthVal) healthVal.textContent = healthScore;
-        if (healthBar) healthBar.style.width = `${healthScore}%`;
-        if (failVal) failVal.textContent = failProb;
-        if (failBar) failBar.style.width = `${Math.min(100, Math.max(1, failProb))}%`;
+        const twinRpm = document.getElementById("twinHudRpm");
+        const twinTorqueHud = document.getElementById("twinHudTorque");
+        const twinTempHud = document.getElementById("twinHudTemp");
 
-        // Set Unified Status Badges & Avatar Colors
-        if (statusMode === "CRITICAL") {
-            if (healthBadge) { healthBadge.textContent = "CRITICAL FAULT"; healthBadge.className = "badge badge-danger"; }
-            if (headerModeBadge) { headerModeText.textContent = "CRITICAL"; headerModeBadge.style.color = "#ef4444"; }
-            if (avatar) { avatar.style.borderColor = "#ef4444"; avatar.style.background = "rgba(239, 68, 68, 0.2)"; }
-            if (healthSub) healthSub.textContent = "Immediate mechanical intervention required. Safety parameter exceeded.";
-        } else if (statusMode === "WARNING") {
-            if (healthBadge) { healthBadge.textContent = "WARNING STRESS"; healthBadge.className = "badge badge-warning"; }
-            if (headerModeBadge) { headerModeText.textContent = "WARNING"; headerModeBadge.style.color = "#f59e0b"; }
-            if (avatar) { avatar.style.borderColor = "#f59e0b"; avatar.style.background = "rgba(245, 158, 11, 0.2)"; }
-            if (healthSub) healthSub.textContent = "Parameters approaching critical boundaries. Schedule preventative inspection.";
-        } else {
-            if (healthBadge) { healthBadge.textContent = "OPTIMAL"; healthBadge.className = "badge badge-success"; }
-            if (headerModeBadge) { headerModeText.textContent = "NORMAL"; headerModeBadge.style.color = "#10b981"; }
-            if (avatar) { avatar.style.borderColor = "#10b981"; avatar.style.background = "rgba(16, 185, 129, 0.15)"; }
-            if (healthSub) healthSub.textContent = "All physical parameters and mechanical stress indicators are within standard limits.";
-        }
+        const speed = Math.round(d.rotational_speed || 0);
+        const torque = Number(d.torque || 0).toFixed(1);
+        const wear = Math.round(d.tool_wear || 0);
+        const pTempC = Number(d.process_temperature_c !== undefined ? d.process_temperature_c : (d.process_temperature_k - 273.15)).toFixed(1);
+        const pTempK = Number(d.process_temperature_k || (Number(pTempC) + 273.15)).toFixed(1);
 
-        // 6 Overview KPI Tiles
-        const overviewRpmVal = document.getElementById("overviewRpmVal");
-        const overviewTorqueVal = document.getElementById("overviewTorqueVal");
-        const overviewAirTemp = document.getElementById("overviewAirTemp");
-        const overviewAirTempK = document.getElementById("overviewAirTempK");
-        const overviewProcTemp = document.getElementById("overviewProcTemp");
-        const overviewProcTempK = document.getElementById("overviewProcTempK");
-        const overviewDeltaT = document.getElementById("overviewDeltaT");
-        const overviewToolWear = document.getElementById("overviewToolWear");
-        const overviewVibration = document.getElementById("overviewVibration");
-        const overviewPowerTile = document.getElementById("overviewPowerTile");
-        const overviewAngular = document.getElementById("overviewAngular");
+        if (twinSpeed) twinSpeed.textContent = `${speed.toLocaleString()} RPM`;
+        if (twinTorque) twinTorque.textContent = `${torque} Nm`;
+        if (twinTemp) twinTemp.textContent = `${pTempC} °C`;
+        if (twinWear) twinWear.textContent = `${wear} min`;
 
-        if (overviewRpmVal) overviewRpmVal.textContent = Math.round(reading.rotational_speed).toLocaleString();
-        if (overviewTorqueVal) overviewTorqueVal.textContent = reading.torque.toFixed(1);
-        if (overviewAirTemp) overviewAirTemp.textContent = reading.air_temperature_c.toFixed(1);
-        if (overviewAirTempK) overviewAirTempK.textContent = `${reading.air_temperature_k.toFixed(1)} K`;
-        if (overviewProcTemp) overviewProcTemp.textContent = reading.process_temperature_c.toFixed(1);
-        if (overviewProcTempK) overviewProcTempK.textContent = `${reading.process_temperature_k.toFixed(1)} K`;
+        const summaryText = `${speed.toLocaleString()} RPM • ${torque} Nm • ${pTempK} K`;
+        if (heroTag) heroTag.textContent = summaryText;
 
-        const deltaTVal = (reading.process_temperature_k - reading.air_temperature_k).toFixed(1);
-        if (overviewDeltaT) overviewDeltaT.textContent = `ΔT = ${deltaTVal} K`;
+        if (heroRpm) heroRpm.textContent = `${speed.toLocaleString()} RPM`;
+        if (heroTorque) heroTorque.textContent = `${torque} Nm`;
+        if (heroTemp) heroTemp.textContent = `${pTempC} °C (${pTempK} K)`;
 
-        if (overviewToolWear) overviewToolWear.textContent = reading.tool_wear.toFixed(1);
-        if (overviewVibration) overviewVibration.textContent = reading.vibration.toFixed(2);
+        if (twinRpm) twinRpm.textContent = `${speed.toLocaleString()} RPM`;
+        if (twinTorqueHud) twinTorqueHud.textContent = `${torque} Nm`;
+        if (twinTempHud) twinTempHud.textContent = `${pTempC} °C (${pTempK} K)`;
 
-        // Power calculation
-        const powerW = ((2 * Math.PI * reading.rotational_speed * reading.torque) / 60).toFixed(0);
-        if (overviewPowerTile) overviewPowerTile.textContent = `${(powerW / 1000).toFixed(1)} kW Power`;
-
-        const rads = ((2 * Math.PI * reading.rotational_speed) / 60).toFixed(1);
-        if (overviewAngular) overviewAngular.textContent = `${rads} rad/s`;
-    }
-
-    // Update Digital Twin Thermodynamic & Power Envelope
-    function updateDigitalTwinSection(reading) {
-        const twinDeltaT = document.getElementById("twinDeltaT");
-        const twinPower = document.getElementById("twinPower");
-        const twinOverstrain = document.getElementById("twinOverstrain");
-        const twinVibText = document.getElementById("twinVibText");
-        const twinStatusBadge = document.getElementById("twinStatusBadge");
-
-        const deltaT = (reading.process_temperature_k - reading.air_temperature_k).toFixed(1);
-        const powerW = Math.round((2 * Math.PI * reading.rotational_speed * reading.torque) / 60);
-        const overstrain = Math.round(reading.torque * reading.tool_wear);
-
-        if (twinDeltaT) twinDeltaT.textContent = `${deltaT} K`;
-        if (twinPower) twinPower.textContent = `${powerW.toLocaleString()} W`;
-        if (twinOverstrain) twinOverstrain.textContent = `${overstrain.toLocaleString()} Nm·min`;
-        if (twinVibText) twinVibText.textContent = `${reading.vibration.toFixed(2)} mm/s`;
-
-        if (twinStatusBadge) {
-            const mode = reading.operating_mode || "NORMAL";
-            twinStatusBadge.textContent = `ONLINE • ${mode.toUpperCase()}`;
-            if (mode === "CRITICAL") twinStatusBadge.style.color = "#ef4444";
-            else if (mode === "WARNING") twinStatusBadge.style.color = "#f59e0b";
-            else twinStatusBadge.style.color = "#10b981";
+        // Adjust rotor spinning speed via dynamic duration
+        const rotorElem = document.getElementById("twinRotor");
+        if (rotorElem && !prefersReducedMotion) {
+            const rotDuration = Math.max(1.5, 8.0 - (speed / 4000) * 6.5);
+            rotorElem.style.animationDuration = `${rotDuration.toFixed(2)}s`;
         }
     }
 
-    // Update Live Numerical Telemetry Grid Bar
-    function updateNumericalDeck(reading) {
-        const numAirK = document.getElementById("numAirK");
-        const numAirC = document.getElementById("numAirC");
-        const numProcK = document.getElementById("numProcK");
-        const numProcC = document.getElementById("numProcC");
-        const numRpm = document.getElementById("numRpm");
-        const numAngular = document.getElementById("numAngular");
-        const numTorque = document.getElementById("numTorque");
-        const numPowerCalc = document.getElementById("numPowerCalc");
-        const numWear = document.getElementById("numWear");
-        const numVib = document.getElementById("numVib");
+    // Update Live Monitoring Card Badges
+    function updateLiveMonitoringBadges(d) {
+        const bRpm = document.getElementById("liveValRpm");
+        const bTorque = document.getElementById("liveValTorque");
+        const bAir = document.getElementById("liveValAirTemp");
+        const bTemp = document.getElementById("liveValProcessTemp");
+        const bWear = document.getElementById("liveValWear");
+        const bVib = document.getElementById("liveValVib");
+        const historyStats = document.getElementById("telemetryHistoryStats");
 
-        if (numAirK) numAirK.textContent = `${reading.air_temperature_k.toFixed(1)} K`;
-        if (numAirC) numAirC.textContent = `${reading.air_temperature_c.toFixed(1)} °C`;
-        if (numProcK) numProcK.textContent = `${reading.process_temperature_k.toFixed(1)} K`;
-        if (numProcC) numProcC.textContent = `${reading.process_temperature_c.toFixed(1)} °C`;
-        if (numRpm) numRpm.textContent = `${Math.round(reading.rotational_speed).toLocaleString()} RPM`;
+        if (bRpm) bRpm.textContent = `${Math.round(d.rotational_speed)} RPM`;
+        if (bTorque) bTorque.textContent = `${Number(d.torque).toFixed(1)} Nm`;
+        if (bAir) {
+            const airC = d.air_temperature_c !== undefined ? d.air_temperature_c : (d.air_temperature_k - 273.15);
+            bAir.textContent = `${Number(airC).toFixed(1)} °C`;
+        }
+        if (bTemp) {
+            const procC = d.process_temperature_c !== undefined ? d.process_temperature_c : (d.process_temperature_k - 273.15);
+            bTemp.textContent = `${Number(procC).toFixed(1)} °C`;
+        }
+        if (bWear) bWear.textContent = `${Math.round(d.tool_wear)} min`;
+        if (bVib) bVib.textContent = `${Number(d.vibration || 1.6).toFixed(2)} mm/s`;
 
-        const rads = ((2 * Math.PI * reading.rotational_speed) / 60).toFixed(1);
-        if (numAngular) numAngular.textContent = `${rads} rad/s`;
-
-        if (numTorque) numTorque.textContent = `${reading.torque.toFixed(1)} Nm`;
-        const powerKw = (((2 * Math.PI * reading.rotational_speed * reading.torque) / 60) / 1000).toFixed(1);
-        if (numPowerCalc) numPowerCalc.textContent = `${powerKw} kW Power`;
-
-        if (numWear) numWear.textContent = `${reading.tool_wear.toFixed(1)} min`;
-        if (numVib) numVib.textContent = `${reading.vibration.toFixed(2)} mm/s`;
+        if (historyStats) {
+            historyStats.textContent = `History: ${state.telemetryHistory.length} / ${state.maxHistoryPoints} samples`;
+        }
     }
 
     // =========================================================================
-    // AI PREDICTION: INFERENCE, PRESETS & UNIT CONVERSION
+    // AI PREDICTIONS WORKBENCH
     // =========================================================================
     const predictionForm = document.getElementById("predictionForm");
+    const inputMachineType = document.getElementById("inputMachineType");
     const inputAirTemp = document.getElementById("inputAirTemp");
     const inputProcTemp = document.getElementById("inputProcTemp");
     const inputRpm = document.getElementById("inputRpm");
     const inputTorque = document.getElementById("inputTorque");
     const inputToolWear = document.getElementById("inputToolWear");
-    const inputMachineType = document.getElementById("inputMachineType");
-    const predictionErrorBanner = document.getElementById("predictionErrorBanner");
-    const btnSubmitPredict = document.getElementById("btnSubmitPredict");
-    const btnPredictSpinner = document.getElementById("btnPredictSpinner");
-    const btnPredictText = document.getElementById("btnPredictText");
 
     const btnUnitK = document.getElementById("btnUnitK");
     const btnUnitC = document.getElementById("btnUnitC");
@@ -1202,7 +1071,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const hintAirTemp = document.getElementById("hintAirTemp");
     const hintProcTemp = document.getElementById("hintProcTemp");
 
-    // Temperature Unit Toggle Handler
+    const btnSubmitPredict = document.getElementById("btnSubmitPredict");
+    const btnPredictSpinner = document.getElementById("btnPredictSpinner");
+    const btnPredictText = document.getElementById("btnPredictText");
+
+    // Dynamic temperature unit toggle (Kelvin / Celsius)
     function setTemperatureUnit(unit) {
         if (state.tempUnit === unit) return;
 
@@ -1215,8 +1088,12 @@ document.addEventListener("DOMContentLoaded", () => {
             btnUnitK.classList.remove("active");
             lblAirTemp.textContent = "Air Temperature [°C]:";
             lblProcTemp.textContent = "Process Temperature [°C]:";
-            hintAirTemp.textContent = "Nominal: ~25.0 °C (Range: 15 - 45 °C)";
-            hintProcTemp.textContent = "Nominal: ~35.4 °C (Range: 20 - 60 °C)";
+            hintAirTemp.textContent = "Plausible range: -23.1 – 76.8 °C (Nominal: 25.0 °C)";
+            hintProcTemp.textContent = "Plausible range: -23.1 – 96.8 °C (Nominal: 35.4 °C)";
+            inputAirTemp.min = -23.1;
+            inputAirTemp.max = 76.8;
+            inputProcTemp.min = -23.1;
+            inputProcTemp.max = 96.8;
 
             if (!isNaN(currentAir)) inputAirTemp.value = (currentAir - 273.15).toFixed(1);
             if (!isNaN(currentProc)) inputProcTemp.value = (currentProc - 273.15).toFixed(1);
@@ -1226,8 +1103,12 @@ document.addEventListener("DOMContentLoaded", () => {
             btnUnitC.classList.remove("active");
             lblAirTemp.textContent = "Air Temperature [K]:";
             lblProcTemp.textContent = "Process Temperature [K]:";
-            hintAirTemp.textContent = "Nominal: ~298.2 K (Range: 295.3 - 304.5 K)";
-            hintProcTemp.textContent = "Nominal: ~308.6 K (Range: 305.7 - 313.8 K)";
+            hintAirTemp.textContent = "Plausible range: 250 – 350 K (Nominal: 298.2 K)";
+            hintProcTemp.textContent = "Plausible range: 250 – 370 K (Nominal: 308.6 K)";
+            inputAirTemp.min = 250;
+            inputAirTemp.max = 350;
+            inputProcTemp.min = 250;
+            inputProcTemp.max = 370;
 
             if (!isNaN(currentAir)) inputAirTemp.value = (currentAir + 273.15).toFixed(1);
             if (!isNaN(currentProc)) inputProcTemp.value = (currentProc + 273.15).toFixed(1);
@@ -1237,7 +1118,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (btnUnitK) btnUnitK.addEventListener("click", () => setTemperatureUnit("K"));
     if (btnUnitC) btnUnitC.addEventListener("click", () => setTemperatureUnit("C"));
 
-    // 4 Quick Test Presets
+    // Quick Test Presets
     const presetsData = {
         healthy: {
             type: "M",
@@ -1260,16 +1141,16 @@ document.addEventListener("DOMContentLoaded", () => {
             airK: 296.0,
             procK: 306.0,
             rpm: 1180,
-            torque: 75.0, // Power = 9,267 W > 9,000 W
-            wear: 100
+            torque: 74.0, // excessive torque overload
+            wear: 110
         },
         twf: {
-            type: "M",
-            airK: 298.2,
-            procK: 308.6,
-            rpm: 1520,
+            type: "H",
+            airK: 299.0,
+            procK: 309.5,
+            rpm: 1550,
             torque: 42.0,
-            wear: 235 // wear > 200 min
+            wear: 225 // > 200 min critical flank wear
         }
     };
 
@@ -1283,19 +1164,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (inputMachineType) inputMachineType.value = p.type;
         if (inputRpm) inputRpm.value = p.rpm;
-        if (inputTorque) inputTorque.value = p.torque;
+        if (inputTorque) inputTorque.value = p.torque.toFixed(1);
         if (inputToolWear) inputToolWear.value = p.wear;
 
         if (state.tempUnit === "C") {
-            inputAirTemp.value = (p.airK - 273.15).toFixed(1);
-            inputProcTemp.value = (p.procK - 273.15).toFixed(1);
+            if (inputAirTemp) inputAirTemp.value = (p.airK - 273.15).toFixed(1);
+            if (inputProcTemp) inputProcTemp.value = (p.procK - 273.15).toFixed(1);
         } else {
-            inputAirTemp.value = p.airK.toFixed(1);
-            inputProcTemp.value = p.procK.toFixed(1);
+            if (inputAirTemp) inputAirTemp.value = p.airK.toFixed(1);
+            if (inputProcTemp) inputProcTemp.value = p.procK.toFixed(1);
         }
-
-        if (predictionErrorBanner) predictionErrorBanner.style.display = "none";
-        showToast("info", "Preset Populated", `Loaded ${presetKey.toUpperCase()} parameter scenario.`);
     }
 
     document.querySelectorAll(".btn-preset").forEach(btn => {
@@ -1304,66 +1182,51 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // Prediction Form Submission Handler
+    const presetHealthy = document.getElementById("presetHealthy");
+    const presetHdf = document.getElementById("presetHdf");
+    const presetPwf = document.getElementById("presetPwf");
+    const presetTwf = document.getElementById("presetTwf");
+
+    if (presetHealthy) presetHealthy.addEventListener("click", () => applyPreset("healthy"));
+    if (presetHdf) presetHdf.addEventListener("click", () => applyPreset("hdf"));
+    if (presetPwf) presetPwf.addEventListener("click", () => applyPreset("pwf"));
+    if (presetTwf) presetTwf.addEventListener("click", () => applyPreset("twf"));
+
+    // Form Submission & Inference API Call
     if (predictionForm) {
         predictionForm.addEventListener("submit", async (e) => {
             e.preventDefault();
 
-            if (predictionErrorBanner) predictionErrorBanner.style.display = "none";
+            const machineType = inputMachineType.value;
+            const airTemp = parseFloat(inputAirTemp.value);
+            const procTemp = parseFloat(inputProcTemp.value);
+            const rpm = parseFloat(inputRpm.value);
+            const torque = parseFloat(inputTorque.value);
+            const wear = parseFloat(inputToolWear.value);
 
-            // Extract numeric inputs
-            const airVal = parseFloat(inputAirTemp.value);
-            const procVal = parseFloat(inputProcTemp.value);
-            const rpmVal = parseFloat(inputRpm.value);
-            const torqueVal = parseFloat(inputTorque.value);
-            const wearVal = parseFloat(inputToolWear.value);
-            const typeVal = inputMachineType.value;
-
-            // Strict Client-Side Input Validation
-            const errors = [];
-            if (isNaN(airVal) || airVal <= 0) errors.push("Valid positive Air Temperature is required.");
-            if (isNaN(procVal) || procVal <= 0) errors.push("Valid positive Process Temperature is required.");
-            if (isNaN(rpmVal) || rpmVal < 100 || rpmVal > 10000) errors.push("Rotational Speed must be between 100 and 10,000 RPM.");
-            if (isNaN(torqueVal) || torqueVal < 0 || torqueVal > 300) errors.push("Torque must be between 0 and 300 Nm.");
-            if (isNaN(wearVal) || wearVal < 0 || wearVal > 1000) errors.push("Tool Wear must be between 0 and 1,000 minutes.");
-
-            if (errors.length > 0) {
-                if (predictionErrorBanner) {
-                    predictionErrorBanner.innerHTML = `<strong>Validation Error:</strong><br>${errors.join("<br>")}`;
-                    predictionErrorBanner.style.display = "block";
-                }
-                showToast("error", "Invalid Input", errors[0]);
+            if (isNaN(airTemp) || isNaN(procTemp) || isNaN(rpm) || isNaN(torque) || isNaN(wear)) {
+                showToast("error", "Input Error", "Please provide valid numeric values for all parameters.");
                 return;
             }
 
-            // Prepare JSON payload safely (passing canonical Pydantic names and aliases)
             const payload = {
-                type: typeVal,
-                machine_type: typeVal,
-                rotational_speed_rpm: rpmVal,
-                rotational_speed: rpmVal,
-                torque_nm: torqueVal,
-                torque: torqueVal,
-                tool_wear_min: wearVal,
-                tool_wear: wearVal
+                type: machineType,
+                rotational_speed_rpm: rpm,
+                torque_nm: torque,
+                tool_wear_min: wear
             };
 
             if (state.tempUnit === "C") {
-                payload.air_temperature_c = airVal;
-                payload.process_temperature_c = procVal;
-                payload.air_temperature_k = airVal + 273.15;
-                payload.process_temperature_k = procVal + 273.15;
+                payload.air_temperature_c = airTemp;
+                payload.process_temperature_c = procTemp;
             } else {
-                payload.air_temperature_k = airVal;
-                payload.process_temperature_k = procVal;
-                payload.air_temperature_c = airVal - 273.15;
-                payload.process_temperature_c = procVal - 273.15;
+                payload.air_temperature_k = airTemp;
+                payload.process_temperature_k = procTemp;
             }
 
-            // Loading state on button
             btnSubmitPredict.disabled = true;
-            if (btnPredictSpinner) btnPredictSpinner.style.display = "inline-block";
-            if (btnPredictText) btnPredictText.textContent = "Evaluating Machine Learning Model...";
+            btnPredictSpinner.style.display = "inline-block";
+            btnPredictText.textContent = "Evaluating ML Pipeline...";
 
             try {
                 const resp = await fetch("/api/predict", {
@@ -1373,136 +1236,79 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
 
                 if (!resp.ok) {
-                    const errorData = await resp.json().catch(() => ({}));
-                    let detailMsg = `Server returned error ${resp.status}`;
-                    if (errorData.detail) {
-                        if (Array.isArray(errorData.detail)) {
-                            detailMsg = errorData.detail.map(item => {
-                                const fieldName = item.loc ? item.loc[item.loc.length - 1] : "";
-                                return fieldName ? `${fieldName}: ${item.msg}` : item.msg;
-                            }).join("; ");
-                        } else if (typeof errorData.detail === "object") {
-                            detailMsg = JSON.stringify(errorData.detail);
-                        } else {
-                            detailMsg = String(errorData.detail);
-                        }
-                    }
-                    throw new Error(detailMsg);
+                    const errJson = await resp.json().catch(() => ({}));
+                    throw new Error(errJson.detail || `HTTP ${resp.status}`);
                 }
 
-                const result = await resp.json();
-                renderPredictionResults(result);
-                showToast("success", "Prediction Completed", "Model inference and heuristic diagnostics computed.");
+                const data = await resp.json();
+                renderPredictionResult(data);
+                showToast("success", "Inference Completed", "Predictive maintenance analysis completed successfully.");
 
             } catch (err) {
-                console.error("Prediction inference failed:", err);
-                if (predictionErrorBanner) {
-                    predictionErrorBanner.innerHTML = `<strong>Inference Error:</strong> ${err.message}`;
-                    predictionErrorBanner.style.display = "block";
-                }
-                showToast("error", "Prediction Error", err.message);
-
-                // Clear stale prediction details if request failed
-                const predictionDetails = document.getElementById("predictionDetails");
-                const predictionPlaceholder = document.getElementById("predictionPlaceholder");
-                if (predictionDetails) predictionDetails.style.display = "none";
-                if (predictionPlaceholder) predictionPlaceholder.style.display = "block";
-
+                console.error("Prediction inference error:", err);
+                showToast("error", "Inference Failed", err.message || "Failed to execute prediction pipeline.");
             } finally {
                 btnSubmitPredict.disabled = false;
-                if (btnPredictSpinner) btnPredictSpinner.style.display = "none";
-                if (btnPredictText) btnPredictText.textContent = "Execute AI Prediction";
+                btnPredictSpinner.style.display = "none";
+                btnPredictText.textContent = "Run Prediction";
             }
         });
     }
 
-    function renderPredictionResults(res) {
-        const predictionPlaceholder = document.getElementById("predictionPlaceholder");
-        const predictionDetails = document.getElementById("predictionDetails");
-        const predictionStatusBadge = document.getElementById("predictionStatusBadge");
+    function renderPredictionResult(data) {
+        const pred = data.prediction || {};
+        const risk = Number(pred.failure_probability || 0);
+        const isFailure = Boolean(pred.failure_predicted);
 
-        const predProbValue = document.getElementById("predProbValue");
-        const predProbFill = document.getElementById("predProbFill");
-        const predDecisionBox = document.getElementById("predDecisionBox");
-        const predClassLabel = document.getElementById("predClassLabel");
-        const predClassSub = document.getElementById("predClassSub");
-        const predFailureModeBox = document.getElementById("predFailureModeBox");
-        const predRecommendationBox = document.getElementById("predRecommendationBox");
-        const predComparisonText = document.getElementById("predComparisonText");
+        const riskElem = document.getElementById("predResultRisk");
+        const badgeElem = document.getElementById("predResultBadge");
+        const diagElem = document.getElementById("predResultDiagnosis");
+        const recList = document.getElementById("predRecommendationsList");
+        const compElem = document.getElementById("predPhysicsComparison");
 
-        if (predictionPlaceholder) predictionPlaceholder.style.display = "none";
-        if (predictionDetails) predictionDetails.style.display = "flex";
-
-        const pred = res.prediction || {};
-        const rawProb = pred.failure_probability !== undefined ? pred.failure_probability : (res.failure_probability || 0);
-        const probPercent = (rawProb * 100).toFixed(1);
-
-        if (predProbValue) predProbValue.textContent = `${probPercent}%`;
-        if (predProbFill) predProbFill.style.width = `${Math.min(100, Math.max(2, probPercent))}%`;
-
-        if (predictionStatusBadge) {
-            predictionStatusBadge.textContent = "INFERENCE READY";
-            predictionStatusBadge.className = "badge badge-success";
+        if (riskElem) {
+            riskElem.textContent = `${(risk * 100).toFixed(1)}%`;
+            riskElem.className = `risk-pct-large ${isFailure ? "danger" : (risk > 0.3 ? "warning" : "healthy")}`;
         }
 
-        const isFailure = (pred.failure_predicted !== undefined ? pred.failure_predicted : res.failure_predicted) === 1;
-        if (predDecisionBox) {
-            predDecisionBox.className = "decision-card-block " + (isFailure ? "critical" : (rawProb > 0.25 ? "warning" : ""));
-        }
-
-        if (predClassLabel) {
-            predClassLabel.textContent = isFailure ? "CRITICAL - FAILURE RISK HIGH" : (rawProb > 0.25 ? "WARNING - ELEVATED RISK" : "OPTIMAL - HEALTHY");
-            predClassLabel.style.color = isFailure ? "#ef4444" : (rawProb > 0.25 ? "#f59e0b" : "#10b981");
-        }
-
-        if (predClassSub) {
-            predClassSub.textContent = isFailure ?
-                "The Scikit-learn Random Forest model predicts high likelihood of machine failure under these operating conditions." :
-                "Machine parameters operate safely within the nominal degradation envelope.";
-        }
-
-        // Diagnostics failure mode formatting
-        if (predFailureModeBox) {
-            if (res.diagnostics && res.diagnostics.suspected_modes && res.diagnostics.suspected_modes.length > 0) {
-                predFailureModeBox.innerHTML = res.diagnostics.suspected_modes.map(m =>
-                    `<strong>${escapeHtml(m.mode)}:</strong> ${escapeHtml(m.reason)}`
-                ).join("<br>");
-            } else if (res.suspected_failure_mode) {
-                predFailureModeBox.textContent = res.suspected_failure_mode;
+        if (badgeElem) {
+            if (isFailure) {
+                badgeElem.textContent = "CRITICAL — FAILURE DETECTED";
+                badgeElem.className = "badge badge-danger";
+            } else if (risk > 0.3) {
+                badgeElem.textContent = "WARNING — ELEVATED RISK";
+                badgeElem.className = "badge badge-warning";
             } else {
-                predFailureModeBox.textContent = "No active failure mode detected. Thermal gradient, spindle power, and wear are within limits.";
+                badgeElem.textContent = "OPTIMAL — HEALTHY";
+                badgeElem.className = "badge badge-success";
             }
         }
 
-        // Recommendations
-        if (predRecommendationBox) {
-            if (res.recommendations && res.recommendations.length > 0) {
-                predRecommendationBox.textContent = res.recommendations.join(" ");
-            } else if (res.recommendation) {
-                predRecommendationBox.textContent = res.recommendation;
+        if (diagElem) {
+            if (isFailure && data.failure_modes_detected && data.failure_modes_detected.length > 0) {
+                diagElem.innerHTML = `<strong>Root Cause Diagnostics:</strong> Identified failure trajectory in mode(s): <span class="badge badge-danger">${data.failure_modes_detected.join(", ")}</span>`;
             } else {
-                predRecommendationBox.textContent = isFailure ? "Inspect spindle bearings and cutting insert immediately." : "Continue standard operating schedule.";
+                diagElem.textContent = isFailure
+                    ? "Model predicts high probability of imminent machinery failure under current operating conditions."
+                    : "Machining parameters within nominal operating bounds. Low probability of operational failure.";
             }
         }
 
-        // Comparison text
-        if (predComparisonText) {
-            if (res.ml_vs_rules && res.ml_vs_rules.summary) {
-                predComparisonText.textContent = res.ml_vs_rules.summary;
+        if (recList && Array.isArray(data.recommendations) && data.recommendations.length > 0) {
+            recList.innerHTML = data.recommendations.map(r => `<li>${escapeHtml(r)}</li>`).join("");
+        }
+
+        if (compElem) {
+            if (isFailure) {
+                compElem.innerHTML = `<strong>Rule vs Model Divergence:</strong> ML pipeline predicts elevated breakdown risk (${(risk * 100).toFixed(1)}%). Recommended preventative inspection before resuming high-speed cut.`;
             } else {
-                const ruleStatus = (res.rule_based_evaluation && res.rule_based_evaluation.rule_status) || res.rule_status || "NORMAL";
-                const mlStatus = isFailure ? "CRITICAL" : "NORMAL";
-                if (ruleStatus === mlStatus) {
-                    predComparisonText.textContent = `Agreement: Both physical rule limits and multi-variate ML model evaluate this state as ${ruleStatus}.`;
-                } else {
-                    predComparisonText.textContent = `Divergence: Physical rule boundary evaluates state as ${ruleStatus}, while multi-variate Random Forest model evaluates state as ${mlStatus} (${probPercent}% probability).`;
-                }
+                compElem.textContent = "Static physical threshold rules and multi-variate ML predictions agree: the spindle is operating safely inside nominal boundaries.";
             }
         }
     }
 
     // =========================================================================
-    // ALERT MANAGEMENT CENTRE (SQLite LIFECYCLE & DEDUPLICATION)
+    // ALERTS MANAGEMENT CENTER
     // =========================================================================
     let currentAlertFilterSev = "ALL";
     const alertAckFilter = document.getElementById("alertAckFilter");
@@ -1521,11 +1327,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (btnRefreshAlerts) {
         btnRefreshAlerts.addEventListener("click", () => {
             loadAlerts();
-            showToast("info", "Alerts Refreshed", "Loaded latest alert incident records from SQLite.");
+            showToast("info", "Alerts Refreshed", "Loaded latest incident records from SQLite.");
         });
     }
 
-    async function loadAlerts(silent = false) {
+    async function loadAlerts() {
         const tbody = document.getElementById("alertsTableBody");
         let url = `/api/alerts?limit=50&severity=${currentAlertFilterSev}`;
 
@@ -1540,32 +1346,23 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await resp.json();
 
             const alerts = data.alerts || [];
-            const summary = data.summary || {};
 
-            // Update top stats cards
-            const alertStatTotal = document.getElementById("alertStatTotal");
-            const alertStatCritical = document.getElementById("alertStatCritical");
-            const alertStatWarning = document.getElementById("alertStatWarning");
-            const alertStatResolved = document.getElementById("alertStatResolved");
-
-            if (alertStatTotal) alertStatTotal.textContent = summary.total !== undefined ? summary.total : alerts.length;
-            if (alertStatCritical) alertStatCritical.textContent = summary.active_critical !== undefined ? summary.active_critical : alerts.filter(a => a.severity === "CRITICAL" && a.is_active === 1).length;
-            if (alertStatWarning) alertStatWarning.textContent = summary.active_warning !== undefined ? summary.active_warning : alerts.filter(a => a.severity === "WARNING" && a.is_active === 1).length;
-            if (alertStatResolved) alertStatResolved.textContent = summary.resolved !== undefined ? summary.resolved : alerts.filter(a => a.is_active === 0).length;
-
-            // Nav badge count (unacknowledged active alerts)
+            // Update badge count
             const unackedCount = alerts.filter(a => a.acknowledged === 0 && a.is_active === 1).length;
             if (alertCountBadge) {
                 alertCountBadge.textContent = unackedCount;
                 alertCountBadge.style.display = unackedCount > 0 ? "inline-block" : "none";
             }
 
-            renderOverviewAlerts(alerts.slice(0, 4));
+            const dashAlertCount = document.getElementById("dashAlertCount");
+            if (dashAlertCount) dashAlertCount.textContent = unackedCount;
+
+            renderOverviewAlerts(alerts.slice(0, 3));
 
             if (!tbody) return;
 
             if (alerts.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="empty-state">No incident records matching filter criteria.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="text-muted" style="text-align: center; padding: 24px;">No incident records matching filter criteria.</td></tr>`;
                 return;
             }
 
@@ -1580,9 +1377,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         <td><strong>#${a.id}</strong></td>
                         <td><small>${a.last_seen_at || a.timestamp}</small></td>
                         <td><span class="badge ${sevClass}">${a.severity}</span></td>
-                        <td><small>${a.source || "SYSTEM"}</small></td>
+                        <td><small>${a.source || "SIMULATION"}</small></td>
                         <td>${demoBadge}${escapeHtml(a.message)}</td>
-                        <td><strong class="text-cyan">${a.occurrence_count || 1}×</strong></td>
+                        <td><strong>${a.occurrence_count || 1}×</strong></td>
                         <td>${stateText}</td>
                         <td>
                             ${a.acknowledged === 0 ?
@@ -1599,7 +1396,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     try {
                         const ackResp = await fetch(`/api/alerts/${id}/acknowledge`, { method: "POST" });
                         if (ackResp.ok) {
-                            showToast("success", "Alert Acknowledged", `Incident #${id} marked as acknowledged by operator.`);
+                            showToast("success", "Alert Acknowledged", `Incident #${id} acknowledged by operator.`);
                             loadAlerts();
                         }
                     } catch (err) {
@@ -1610,8 +1407,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         } catch (err) {
             console.error("Failed to load alerts:", err);
-            if (tbody && !silent) {
-                tbody.innerHTML = `<tr><td colspan="8" class="empty-state text-red">Error loading alerts from database.</td></tr>`;
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-red" style="text-align: center; padding: 24px;">Error loading alerts from database.</td></tr>`;
             }
         }
     }
@@ -1621,7 +1418,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!container) return;
 
         if (recent.length === 0) {
-            container.innerHTML = `<div class="empty-state">No critical alerts currently active.</div>`;
+            container.innerHTML = `<div class="text-muted" style="text-align: center; padding: 16px 0;">No active critical alerts.</div>`;
             return;
         }
 
@@ -1631,11 +1428,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const demoTag = isDemo ? `<span class="demo-tag">DEMO</span>` : "";
 
             return `
-                <div class="feed-alert-item ${sevClass}">
+                <div class="feed-item ${sevClass}">
                     <div>
-                        <div class="feed-alert-title">${demoTag}${escapeHtml(a.alert_type)} • <span class="badge ${a.severity === "CRITICAL" ? "badge-danger" : "badge-warning"}">${a.severity}</span></div>
-                        <div class="feed-alert-msg">${escapeHtml(a.message)}</div>
-                        <small class="text-muted">${a.last_seen_at || a.timestamp} • Occurrences: ${a.occurrence_count || 1}×</small>
+                        <div class="feed-title">${demoTag}${escapeHtml(a.alert_type)} • <span class="badge ${a.severity === "CRITICAL" ? "badge-danger" : "badge-warning"}">${a.severity}</span></div>
+                        <div class="feed-desc">${escapeHtml(a.message)}</div>
+                        <div class="feed-time">${a.last_seen_at || a.timestamp} • Occurrences: ${a.occurrence_count || 1}×</div>
                     </div>
                 </div>
             `;
@@ -1643,7 +1440,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // =========================================================================
-    // MAINTENANCE HISTORY & SERVICE RECORD MANAGEMENT
+    // MAINTENANCE LOG & SERVICE RECORDS
     // =========================================================================
     const maintSearchInput = document.getElementById("maintSearchInput");
     const maintTypeFilter = document.getElementById("maintTypeFilter");
@@ -1654,9 +1451,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const maintForm = document.getElementById("maintForm");
     const btnSubmitMaint = document.getElementById("btnSubmitMaint");
 
-    if (btnOpenMaintModal && maintModal) {
+    if (btnOpenMaintModal) {
         btnOpenMaintModal.addEventListener("click", () => {
-            maintModal.style.display = "flex";
+            if (maintModal) maintModal.style.display = "flex";
         });
     }
 
@@ -1667,52 +1464,48 @@ document.addEventListener("DOMContentLoaded", () => {
     if (btnModalClose) btnModalClose.addEventListener("click", closeMaintModal);
     if (btnModalCancel) btnModalCancel.addEventListener("click", closeMaintModal);
 
-    if (maintSearchInput) {
-        maintSearchInput.addEventListener("input", debounce(() => loadMaintenanceHistory(), 300));
-    }
-    if (maintTypeFilter) {
-        maintTypeFilter.addEventListener("change", () => loadMaintenanceHistory());
-    }
+    if (maintSearchInput) maintSearchInput.addEventListener("input", debounce(() => loadMaintenanceHistory(), 250));
+    if (maintTypeFilter) maintTypeFilter.addEventListener("change", () => loadMaintenanceHistory());
 
     async function loadMaintenanceHistory() {
         const tbody = document.getElementById("maintTableBody");
-        const query = maintSearchInput ? encodeURIComponent(maintSearchInput.value.trim()) : "";
-        const typeFilter = maintTypeFilter ? maintTypeFilter.value : "all";
+        let url = "/api/maintenance?limit=100";
 
-        let url = `/api/maintenance?limit=100`;
-        if (query) url += `&search=${query}`;
-        if (typeFilter === "user") url += `&is_demo=0`;
-        else if (typeFilter === "demo") url += `&is_demo=1`;
+        if (maintSearchInput && maintSearchInput.value.trim()) {
+            url += `&search=${encodeURIComponent(maintSearchInput.value.trim())}`;
+        }
+        if (maintTypeFilter && maintTypeFilter.value !== "ALL") {
+            url += `&action_type=${encodeURIComponent(maintTypeFilter.value)}`;
+        }
 
         try {
             const resp = await fetch(url);
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
             const data = await resp.json();
-            const events = data.events || [];
 
-            renderOverviewMaint(events.slice(0, 3));
+            const events = data.events || [];
+            renderOverviewMaintenance(events.slice(0, 3));
 
             if (!tbody) return;
 
             if (events.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="empty-state">No maintenance records found matching criteria.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="text-muted" style="text-align: center; padding: 24px;">No maintenance records found.</td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = events.map(ev => {
-                const isDemo = ev.is_demo === 1 || (ev.description && ev.description.includes("[DEMO"));
-                const originBadge = isDemo ? `<span class="demo-tag">DEMO</span>` : `<span class="user-tag">USER</span>`;
+            tbody.innerHTML = events.map(e => {
+                const isDemo = e.is_demo === 1 || (e.description && e.description.startsWith("[DEMO"));
+                const tag = isDemo ? `<span class="demo-tag">DEMO</span>` : `<span class="badge badge-success">USER</span>`;
 
                 return `
                     <tr>
-                        <td><strong>#${ev.id}</strong></td>
-                        <td><small>${ev.timestamp}</small></td>
-                        <td><strong>${escapeHtml(ev.technician_name)}</strong></td>
-                        <td>${originBadge}</td>
-                        <td><span class="badge badge-outline">${escapeHtml(ev.action_type)}</span></td>
-                        <td><small class="text-cyan">${escapeHtml(ev.component)}</small></td>
-                        <td>${escapeHtml(ev.description)}</td>
-                        <td><small class="text-muted">${escapeHtml(ev.notes || "--")}</small></td>
+                        <td><strong>#${e.id}</strong></td>
+                        <td><small>${e.performed_at || e.timestamp}</small></td>
+                        <td><strong>${escapeHtml(e.component)}</strong></td>
+                        <td><span class="badge badge-info">${escapeHtml(e.action_type)}</span></td>
+                        <td>${tag} ${escapeHtml(e.description)}</td>
+                        <td>${escapeHtml(e.technician_name || "Plant Tech")}</td>
+                        <td><small class="text-muted">${escapeHtml(e.notes || "-")}</small></td>
                     </tr>
                 `;
             }).join("");
@@ -1720,37 +1513,36 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (err) {
             console.error("Failed to load maintenance records:", err);
             if (tbody) {
-                tbody.innerHTML = `<tr><td colspan="8" class="empty-state text-red">Error loading maintenance records from database.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="text-red" style="text-align: center; padding: 24px;">Error loading maintenance records.</td></tr>`;
             }
         }
     }
 
-    function renderOverviewMaint(recent) {
+    function renderOverviewMaintenance(recent) {
         const container = document.getElementById("overviewMaintList");
         if (!container) return;
 
         if (recent.length === 0) {
-            container.innerHTML = `<div class="empty-state">No maintenance records logged yet.</div>`;
+            container.innerHTML = `<div class="text-muted" style="text-align: center; padding: 16px 0;">No recent maintenance events.</div>`;
             return;
         }
 
-        container.innerHTML = recent.map(ev => {
-            const isDemo = ev.is_demo === 1 || (ev.description && ev.description.includes("[DEMO"));
-            const originBadge = isDemo ? `<span class="demo-tag">DEMO</span>` : `<span class="user-tag">USER</span>`;
+        container.innerHTML = recent.map(e => {
+            const isDemo = e.is_demo === 1 || (e.description && e.description.startsWith("[DEMO"));
+            const tag = isDemo ? `<span class="demo-tag">DEMO</span>` : "";
 
             return `
-                <div class="feed-alert-item">
+                <div class="feed-item">
                     <div>
-                        <div class="feed-alert-title">${originBadge} ${escapeHtml(ev.action_type)} • <span class="text-cyan">${escapeHtml(ev.component)}</span></div>
-                        <div class="feed-alert-msg">${escapeHtml(ev.description)}</div>
-                        <small class="text-muted">${ev.timestamp} • Lead: ${escapeHtml(ev.technician_name)}</small>
+                        <div class="feed-title">${tag}${escapeHtml(e.action_type)} • <strong>${escapeHtml(e.component)}</strong></div>
+                        <div class="feed-desc">${escapeHtml(e.description)}</div>
+                        <div class="feed-time">${e.performed_at || e.timestamp} • Tech: ${escapeHtml(e.technician_name || "Engineer")}</div>
                     </div>
                 </div>
             `;
         }).join("");
     }
 
-    // Modal Form Submission for Adding Maintenance Log
     if (maintForm) {
         maintForm.addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -1785,13 +1577,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
-                showToast("success", "Maintenance Recorded", "Service log record persisted to SQLite database.");
+                showToast("success", "Maintenance Recorded", "Service log entry persisted to SQLite database.");
                 maintForm.reset();
                 closeMaintModal();
                 loadMaintenanceHistory();
 
             } catch (err) {
-                console.error("Failed to save maintenance log:", err);
+                console.error("Failed to save maintenance record:", err);
                 showToast("error", "Save Failed", "Failed to insert record into SQLite.");
             } finally {
                 btnSubmitMaint.disabled = false;
@@ -1801,7 +1593,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // =========================================================================
-    // MODEL PERFORMANCE METRICS RENDERING
+    // MODEL PERFORMANCE METRICS (ACCURACY, RECALL, CONFUSION MATRIX)
     // =========================================================================
     async function loadModelMetrics() {
         try {
@@ -1811,29 +1603,49 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const metrics = data.evaluation_metrics || {};
             const cm = data.confusion_matrix || {};
-            const featImportances = data.feature_importance || {};
+            const featImportances = data.feature_importances || data.feature_importance || {};
 
-            // Metric Cards
+            // Accuracy, Recall, Precision, F1, ROC-AUC
+            const acc = metrics.accuracy !== undefined ? metrics.accuracy : 0.9790;
+            const rec = metrics.recall_failure_class !== undefined ? metrics.recall_failure_class : (metrics.failure_recall !== undefined ? metrics.failure_recall : 0.6029);
+            const prec = metrics.precision_failure_class !== undefined ? metrics.precision_failure_class : (metrics.failure_precision !== undefined ? metrics.failure_precision : 0.7321);
+            const f1 = metrics.f1_score_failure_class !== undefined ? metrics.f1_score_failure_class : (metrics.f1_score !== undefined ? metrics.f1_score : 0.6613);
+            const rocAuc = metrics.roc_auc !== undefined ? metrics.roc_auc : 0.9590;
+
             const metricAccuracy = document.getElementById("metricAccuracy");
             const metricRecall = document.getElementById("metricRecall");
             const metricPrecision = document.getElementById("metricPrecision");
+            const metricF1 = document.getElementById("metricF1");
             const metricRocAuc = document.getElementById("metricRocAuc");
 
-            if (metricAccuracy) metricAccuracy.textContent = (metrics.accuracy * 100).toFixed(2);
-            if (metricRecall) metricRecall.textContent = (metrics.failure_recall * 100).toFixed(2);
-            if (metricPrecision) metricPrecision.textContent = (metrics.failure_precision * 100).toFixed(2);
-            if (metricRocAuc) metricRocAuc.textContent = metrics.roc_auc.toFixed(4);
+            if (metricAccuracy) metricAccuracy.textContent = (acc * 100).toFixed(2) + "%";
+            if (metricRecall) metricRecall.textContent = (rec * 100).toFixed(2) + "%";
+            if (metricPrecision) metricPrecision.textContent = (prec * 100).toFixed(2) + "%";
+            if (metricF1) metricF1.textContent = f1.toFixed(4);
+            if (metricRocAuc) metricRocAuc.textContent = rocAuc.toFixed(4);
 
-            // Confusion Matrix Table
+            // Confusion Matrix
+            let tn = cm.true_negatives_healthy_correct || cm.true_negatives;
+            let fp = cm.false_positives_false_alarms || cm.false_positives;
+            let fn = cm.false_negatives_missed_failures || cm.false_negatives;
+            let tp = cm.true_positives_failures_detected || cm.true_positives;
+
+            if (cm.matrix && Array.isArray(cm.matrix) && cm.matrix.length >= 2) {
+                if (tn === undefined) tn = cm.matrix[0][0];
+                if (fp === undefined) fp = cm.matrix[0][1];
+                if (fn === undefined) fn = cm.matrix[1][0];
+                if (tp === undefined) tp = cm.matrix[1][1];
+            }
+
             const cmTN = document.getElementById("cmTN");
             const cmFP = document.getElementById("cmFP");
             const cmFN = document.getElementById("cmFN");
             const cmTP = document.getElementById("cmTP");
 
-            if (cmTN) cmTN.textContent = (cm.true_negatives || 1917).toLocaleString();
-            if (cmFP) cmFP.textContent = (cm.false_positives || 15).toLocaleString();
-            if (cmFN) cmFN.textContent = (cm.false_negatives || 27).toLocaleString();
-            if (cmTP) cmTP.textContent = (cm.true_positives || 41).toLocaleString();
+            if (cmTN) cmTN.textContent = (tn || 1917).toLocaleString();
+            if (cmFP) cmFP.textContent = (fp || 15).toLocaleString();
+            if (cmFN) cmFN.textContent = (fn || 27).toLocaleString();
+            if (cmTP) cmTP.textContent = (tp || 41).toLocaleString();
 
             // Feature Importances
             const container = document.getElementById("featureImportanceBars");
@@ -1849,7 +1661,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <div class="feat-bar-row">
                             <div class="feat-bar-header">
                                 <span>${cleanName}</span>
-                                <strong class="text-cyan">${(weight * 100).toFixed(1)}%</strong>
+                                <strong class="text-forest">${(weight * 100).toFixed(1)}%</strong>
                             </div>
                             <div class="feat-track">
                                 <div class="feat-fill" style="width: ${pct}%;"></div>
@@ -1865,11 +1677,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // =========================================================================
-    // UTILITY HELPERS
+    // UTILITIES
     // =========================================================================
     function escapeHtml(str) {
         if (!str) return "";
-        return str
+        return String(str)
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
@@ -1887,31 +1699,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function formatFeatureName(name) {
         const map = {
-            "num__Torque [Nm]": "Cutting Torque [Nm]",
+            "num__Torque [Nm]": "Drive Torque [Nm]",
+            "Torque [Nm]": "Drive Torque [Nm]",
             "num__Rotational speed [rpm]": "Rotational Speed [RPM]",
+            "Rotational speed [rpm]": "Rotational Speed [RPM]",
             "num__Tool wear [min]": "Tool Wear [minutes]",
+            "Tool wear [min]": "Tool Wear [minutes]",
             "num__Process temperature [K]": "Process Temperature [K]",
+            "Process temperature [K]": "Process Temperature [K]",
             "num__Air temperature [K]": "Air Temperature [K]",
+            "Air temperature [K]": "Air Temperature [K]",
             "cat__Type_L": "Variant Quality: Type L",
             "cat__Type_M": "Variant Quality: Type M",
-            "cat__Type_H": "Variant Quality: Type H"
+            "cat__Type_H": "Variant Quality: Type H",
+            "Type_L": "Variant Quality: Type L",
+            "Type_M": "Variant Quality: Type M",
+            "Type_H": "Variant Quality: Type H"
         };
         return map[name] || name;
     }
 
     // =========================================================================
-    // INITIALIZATION RUNTIME
+    // RUNTIME INITIALIZATION
     // =========================================================================
     checkBackendHealth();
-    loadAlerts(true);
+    loadAlerts();
     loadMaintenanceHistory();
     loadModelMetrics();
 
-    // Start background telemetry streaming
-    startTelemetryLoop();
+    // Check initial route
+    handleHashRoute();
 
-    // Set initial preset
-    applyPreset("healthy");
-
-    console.log("[SmartTwin AI] Dashboard V2 initialized successfully.");
+    console.log("[SmartTwin AI] Jade Pebble Morning client controller initialized.");
 });

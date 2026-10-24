@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="SmartTwin AI - AI-Based Digital Twin for Smart Manufacturing Using Predictive Maintenance (MDM Mini Project)">
+    <title>SmartTwin AI | Digital Twin & Predictive Maintenance</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+
+    <!-- Ambient Industrial Background -->
+    <div class="background">
+        <div class="grid"></div>
+        <div class="glow glow-one"></div>
+        <div class="glow glow-two"></div>
+    </div>
+
+    <!-- Application Shell -->
+    <div class="app-layout">
+
+        <!-- ===================================================================
+             SIDEBAR NAVIGATION
+        ==================================================================== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">⚙</span>
+                    <span class="logo-text">SmartTwin<span class="highlight">.AI</span></span>
+                </div>
+                <div class="project-tag">MDM MINI PROJECT</div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-section="overview">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">Overview Dashboard</span>
+                </button>
+                <button class="nav-item" data-section="digital-twin">
+                    <span class="nav-icon">🔄</span>
+                    <span class="nav-label">Digital Twin</span>
+                </button>
+                <button class="nav-item" data-section="monitoring">
+                    <span class="nav-icon">📈</span>
+                    <span class="nav-label">Live Telemetry</span>
+                </button>
+                <button class="nav-item" data-section="prediction">
+                    <span class="nav-icon">🧠</span>
+                    <span class="nav-label">AI Prediction</span>
+                </button>
+                <button class="nav-item" data-section="alerts">
+                    <span class="nav-icon">🚨</span>
+                    <span class="nav-label">Alert Centre</span>
+                    <span class="nav-badge" id="alertCountBadge">0</span>
+                </button>
+                <button class="nav-item" data-section="maintenance">
+                    <span class="nav-icon">🛠️</span>
+                    <span class="nav-label">Maintenance Log</span>
+                </button>
+                <button class="nav-item" data-section="model-perf">
+                    <span class="nav-icon">🎯</span>
+                    <span class="nav-label">Model Performance</span>
+                </button>
+                <button class="nav-item" data-section="about">
+                    <span class="nav-icon">ℹ️</span>
+                    <span class="nav-label">Project Details</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="backend-status-card">
+                    <div class="status-row">
+                        <span class="status-dot" id="systemStatusDot"></span>
+                        <span class="status-text" id="systemStatusText">Connecting...</span>
+                    </div>
+                    <div class="status-detail">
+                        <small id="modelStatusDetail">ML Pipeline: Checking</small>
+                    </div>
+                </div>
+                <a href="/docs" target="_blank" class="api-docs-link">
+                    <span>Swagger API Docs ↗</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- ===================================================================
+             MAIN CONTENT WRAPPER
+        ==================================================================== -->
+        <div class="main-wrapper">
+
+            <!-- Top Header Bar -->
+            <header class="top-header">
+                <div class="header-left">
+                    <button class="mobile-menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+                    <div>
+                        <h1 class="page-title" id="pageTitle">Overview Dashboard</h1>
+                        <p class="page-subtitle" id="pageSubtitle">Real-time industrial machine telemetry & predictive intelligence</p>
+                    </div>
+                </div>
+
+                <div class="header-controls">
+                    <!-- Scenario Quick Selector -->
+                    <div class="scenario-selector-wrap">
+                        <label for="scenarioSelect">Demonstration Scenario:</label>
+                        <select id="scenarioSelect" class="styled-select">
+                            <option value="normal">Normal Operation (Nominal)</option>
+                            <option value="warning">Warning Condition (Elevated)</option>
+                            <option value="hdf">Fault: Heat Dissipation (HDF)</option>
+                            <option value="pwf">Fault: Power Anomaly (PWF)</option>
+                            <option value="twf">Fault: Tool Wear Exceeded (TWF)</option>
+                            <option value="osf">Fault: Overstrain Limit (OSF)</option>
+                        </select>
+                    </div>
+
+                    <!-- Simulator Controls -->
+                    <div class="sim-btn-group">
+                        <button id="btnSimPauseResume" class="btn btn-sm btn-outline" title="Pause or Resume Simulator">
+                            <span id="simPauseIcon">⏸</span> <span id="simPauseText">Pause</span>
+                        </button>
+                        <button id="btnSimReset" class="btn btn-sm btn-outline" title="Reset to Nominal Conditions">
+                            ↺ Reset
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content Container -->
+            <main class="content-container">
+
+                <!-- ===============================================================
+                     SECTION 1: OVERVIEW DASHBOARD
+                ================================================================ -->
+                <section id="section-overview" class="app-section active">
+                    
+                    <!-- KPI Banner -->
+                    <div class="kpi-grid">
+                        <div class="stat-card kpi-health">
+                            <div class="stat-header">
+                                <span class="stat-label">MACHINE HEALTH SCORE</span>
+                                <span class="badge" id="overviewHealthBadge">OPTIMAL</span>
+                            </div>
+                            <div class="stat-value">
+                                <span id="overviewHealthVal">95</span><span class="unit">%</span>
+                            </div>
+                            <div class="stat-bar-container">
+                                <div class="stat-bar-fill" id="overviewHealthBar" style="width: 95%;"></div>
+                            </div>
+                            <div class="stat-subtext" id="overviewHealthSub">Calculated from ML failure probability & physics checks</div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">FAILURE PROBABILITY (AI)</span>
+                                <span class="badge badge-info" id="overviewFailBadge">LOW RISK</span>
+                            </div>
+                            <div class="stat-value">
+                                <span id="overviewFailVal">1.2</span><span class="unit">%</span>
+                            </div>
+                            <div class="stat-subtext">Estimated by Scikit-learn Random Forest model</div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">SPINDLE SPEED</span>
+                                <span class="status-indicator-tag" id="overviewRpmStatus">● RUNNING</span>
+                            </div>
+                            <div class="stat-value">
+                                <span id="overviewRpmVal">1480</span><span class="unit">RPM</span>
+                            </div>
+                            <div class="stat-subtext">Nominal rating: 1400 - 1600 RPM</div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">SPINDLE TORQUE</span>
+                                <span class="status-indicator-tag" id="overviewTorqueStatus">● STABLE</span>
+                            </div>
+                            <div class="stat-value">
+                                <span id="overviewTorqueVal">40.2</span><span class="unit">Nm</span>
+                            </div>
+                            <div class="stat-subtext">Continuous limit: 55.0 Nm</div>
+                        </div>
+                    </div>
+
+                    <!-- Secondary Metric Row -->
+                    <div class="kpi-grid secondary-kpi">
+                        <div class="stat-card mini-card">
+                            <span class="stat-label">AIR TEMP</span>
+                            <div class="stat-value"><span id="overviewAirTemp">25.1</span><span class="unit">°C</span></div>
+                            <small id="overviewAirTempK">(298.2 K)</small>
+                        </div>
+                        <div class="stat-card mini-card">
+                            <span class="stat-label">PROCESS TEMP</span>
+                            <div class="stat-value"><span id="overviewProcTemp">35.4</span><span class="unit">°C</span></div>
+                            <small id="overviewProcTempK">(308.6 K)</small>
+                        </div>
+                        <div class="stat-card mini-card">
+                            <span class="stat-label">TOOL WEAR</span>
+                            <div class="stat-value"><span id="overviewToolWear">35.0</span><span class="unit">min</span></div>
+                            <small>Max limit: 200 min</small>
+                        </div>
+                        <div class="stat-card mini-card">
+                            <span class="stat-label">VIBRATION <small>(NON-ML)</small></span>
+                            <div class="stat-value"><span id="overviewVibration">1.52</span><span class="unit">mm/s</span></div>
+                            <small class="text-cyan">Independent external sensor</small>
+                        </div>
+                    </div>
+
+                    <!-- Split Overview Cards -->
+                    <div class="dashboard-split-grid">
+                        
+                        <!-- Mini Digital Twin Preview -->
+                        <div class="card glass-card">
+                            <div class="card-header">
+                                <h3>Digital Twin Condition Snapshot</h3>
+                                <button class="btn btn-xs btn-outline" data-jump-to="digital-twin">Open Full Twin →</button>
+                            </div>
+                            <div class="twin-preview-container">
+                                <div class="twin-svg-wrap">
+                                    <svg viewBox="0 0 300 180" class="mini-machine-svg">
+                                        <!-- Stator Outer -->
+                                        <rect x="40" y="30" width="220" height="120" rx="10" fill="#121a29" stroke="#00e5ff" stroke-width="2"/>
+                                        <!-- Cooling Fins -->
+                                        <line x1="60" y1="20" x2="60" y2="30" stroke="#00e5ff" stroke-width="3"/>
+                                        <line x1="100" y1="20" x2="100" y2="30" stroke="#00e5ff" stroke-width="3"/>
+                                        <line x1="140" y1="20" x2="140" y2="30" stroke="#00e5ff" stroke-width="3"/>
+                                        <line x1="180" y1="20" x2="180" y2="30" stroke="#00e5ff" stroke-width="3"/>
+                                        <line x1="220" y1="20" x2="220" y2="30" stroke="#00e5ff" stroke-width="3"/>
+                                        <!-- Rotor Core -->
+                                        <circle cx="150" cy="90" r="42" fill="#08101a" stroke="#35d5a4" stroke-width="2" class="rotating-rotor" id="previewRotor"/>
+                                        <!-- Bearing Hub -->
+                                        <circle cx="150" cy="90" r="16" fill="#1b2a3f" stroke="#00e5ff" stroke-width="1.5"/>
+                                        <!-- Shaft -->
+                                        <rect x="250" y="82" width="40" height="16" rx="3" fill="#486581" stroke="#35d5a4"/>
+                                    </svg>
+                                </div>
+                                <div class="twin-quick-stats">
+                                    <div class="twin-stat-item">
+                                        <span>Operating Scenario:</span>
+                                        <strong id="twinCurrentScenario" class="text-cyan">Normal</strong>
+                                    </div>
+                                    <div class="twin-stat-item">
+                                        <span>Active Variant:</span>
+                                        <strong id="twinCurrentVariant">Type M (Medium)</strong>
+                                    </div>
+                                    <div class="twin-stat-item">
+                                        <span>Diagnostic Summary:</span>
+                                        <small id="twinDiagnosticSummary">Parameters within normal operating bounds.</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Alerts Feed -->
+                        <div class="card glass-card">
+                            <div class="card-header">
+                                <h3>Recent System Alerts</h3>
+                                <button class="btn btn-xs btn-outline" data-jump-to="alerts">View All Alerts →</button>
+                            </div>
+                            <div class="recent-alerts-list" id="overviewAlertsList">
+                                <div class="empty-state">No critical alerts currently active.</div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- ===============================================================
+                     SECTION 2: DIGITAL TWIN
+                ================================================================ -->
+                <section id="section-digital-twin" class="app-section">
+                    <div class="section-notice">
+                        <span class="notice-icon">ℹ️</span>
+                        <span><strong>Software Simulation Notice:</strong> This interactive 2D digital twin visualizes real-time simulated parameters and mechanical states based on the official UCI AI4I 2020 predictive maintenance dynamics. It is not connected to physical plant hardware.</span>
+                    </div>
+
+                    <div class="twin-layout-grid">
+                        
+                        <!-- Visual Motor Twin Stage -->
+                        <div class="card glass-card twin-stage-card">
+                            <div class="card-header">
+                                <div>
+                                    <h3>Virtual CNC Spindle & Motor Twin</h3>
+                                    <small class="text-muted">Dynamic rotational velocity, thermal gradient, and stress indicators</small>
+                                </div>
+                                <div class="badge badge-outline" id="twinStatusBadge">ONLINE • NORMAL</div>
+                            </div>
+
+                            <div class="twin-visual-canvas-container">
+                                <div class="interactive-machine-stage" id="machineStage">
+                                    
+                                    <!-- Dynamic SVG Machine Illustration -->
+                                    <svg viewBox="0 0 600 340" class="full-machine-svg" id="twinMachineSvg">
+                                        <defs>
+                                            <linearGradient id="heatGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                <stop offset="0%" stop-color="#00e5ff" stop-opacity="0.3" id="heatStop1"/>
+                                                <stop offset="100%" stop-color="#ff4d4f" stop-opacity="0.3" id="heatStop2"/>
+                                            </linearGradient>
+                                            <radialGradient id="bearingGlow" cx="50%" cy="50%" r="50%">
+                                                <stop offset="0%" stop-color="#00e5ff" stop-opacity="0.8"/>
+                                                <stop offset="100%" stop-color="#087f8c" stop-opacity="0"/>
+                                            </radialGradient>
+                                        </defs>
+
+                                        <!-- Machine Mounting Base -->
+                                        <rect x="50" y="270" width="500" height="24" rx="4" fill="#0b111c" stroke="#1d2d44" stroke-width="2"/>
+                                        <line x1="80" y1="294" x2="120" y2="310" stroke="#1d2d44" stroke-width="4"/>
+                                        <line x1="480" y1="294" x2="520" y2="310" stroke="#1d2d44" stroke-width="4"/>
+
+                                        <!-- Stator Housing -->
+                                        <rect x="120" y="60" width="300" height="200" rx="14" fill="#0e1726" stroke="#00e5ff" stroke-width="2" id="statorBody"/>
+                                        <!-- Thermal Heat Shield Overlay -->
+                                        <rect x="120" y="60" width="300" height="200" rx="14" fill="url(#heatGradient)" id="thermalOverlay"/>
+
+                                        <!-- External Cooling Fins -->
+                                        <g stroke="#00e5ff" stroke-width="3" id="coolingFins">
+                                            <line x1="160" y1="42" x2="160" y2="60"/>
+                                            <line x1="210" y1="42" x2="210" y2="60"/>
+                                            <line x1="260" y1="42" x2="260" y2="60"/>
+                                            <line x1="310" y1="42" x2="310" y2="60"/>
+                                            <line x1="360" y1="42" x2="360" y2="60"/>
+                                        </g>
+
+                                        <!-- Left Drive Bearing Housing -->
+                                        <rect x="70" y="115" width="50" height="90" rx="6" fill="#162235" stroke="#35d5a4" stroke-width="2"/>
+                                        <circle cx="95" cy="160" r="14" fill="#00e5ff" opacity="0.4" id="leftBearing"/>
+
+                                        <!-- Main Rotor Assembly -->
+                                        <g id="mainRotorGroup" class="rotor-rotating">
+                                            <circle cx="270" cy="160" r="75" fill="#131e30" stroke="#35d5a4" stroke-width="3"/>
+                                            <circle cx="270" cy="160" r="45" fill="#1a283e" stroke="#00e5ff" stroke-width="2"/>
+                                            <!-- Magnetic Poles / Rotor Teeth -->
+                                            <line x1="270" y1="85" x2="270" y2="235" stroke="#00e5ff" stroke-width="2" stroke-dasharray="8 6"/>
+                                            <line x1="195" y1="160" x2="345" y2="160" stroke="#00e5ff" stroke-width="2" stroke-dasharray="8 6"/>
+                                            <line x1="217" y1="107" x2="323" y2="213" stroke="#35d5a4" stroke-width="1.5" stroke-dasharray="6 6"/>
+                                            <line x1="217" y1="213" x2="323" y2="107" stroke="#35d5a4" stroke-width="1.5" stroke-dasharray="6 6"/>
+                                            <!-- Center Shaft Hub -->
+                                            <circle cx="270" cy="160" r="20" fill="#00e5ff"/>
+                                        </g>
+
+                                        <!-- Output Spindle Shaft & Tool Holder -->
+                                        <rect x="420" y="146" width="70" height="28" rx="3" fill="#334e68" stroke="#35d5a4" stroke-width="2"/>
+                                        <!-- Tool / Insert Assembly -->
+                                        <polygon points="490,140 540,160 490,180" fill="#ffb703" stroke="#ff7b7b" stroke-width="2" id="cuttingToolTip"/>
+
+                                        <!-- Telemetry Callout Markers -->
+                                        <g class="callout-labels">
+                                            <!-- Temp Callout -->
+                                            <circle cx="270" cy="50" r="5" fill="#ff7b7b"/>
+                                            <text x="270" y="32" fill="#ff7b7b" font-size="12" text-anchor="middle" font-weight="bold" id="twinTempCallout">35.4 °C</text>
+
+                                            <!-- Spindle RPM Callout -->
+                                            <circle cx="270" cy="160" r="5" fill="#00e5ff"/>
+                                            <text x="270" y="260" fill="#00e5ff" font-size="13" text-anchor="middle" font-weight="bold" id="twinRpmCallout">1480 RPM</text>
+
+                                            <!-- Torque Callout -->
+                                            <circle cx="450" cy="135" r="5" fill="#35d5a4"/>
+                                            <text x="450" y="125" fill="#35d5a4" font-size="12" text-anchor="middle" font-weight="bold" id="twinTorqueCallout">40.2 Nm</text>
+
+                                            <!-- Tool Wear Callout -->
+                                            <circle cx="515" cy="135" r="5" fill="#ffb703"/>
+                                            <text x="515" y="125" fill="#ffb703" font-size="12" text-anchor="middle" font-weight="bold" id="twinWearCallout">35 min</text>
+                                        </g>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Twin Parameter Controls & Diagnostic Panel -->
+                        <div class="card glass-card twin-controls-card">
+                            <div class="card-header">
+                                <h3>Digital Twin Parameter Adjustments</h3>
+                            </div>
+                            
+                            <div class="twin-form-grid">
+                                <div class="form-group">
+                                    <label>Machine Variant Quality Grade:</label>
+                                    <div class="pill-group" id="variantPillGroup">
+                                        <button class="pill-btn" data-variant="L">Type L (Low - 50%)</button>
+                                        <button class="pill-btn active" data-variant="M">Type M (Med - 30%)</button>
+                                        <button class="pill-btn" data-variant="H">Type H (High - 20%)</button>
+                                    </div>
+                                    <small class="form-hint">Type L tools wear out 2.5× faster than Type H under identical torque.</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Simulated Scenario Mode:</label>
+                                    <div class="scenario-buttons-grid">
+                                        <button class="scenario-btn active" data-scenario="normal">
+                                            <strong>Normal</strong>
+                                            <span>Nominal operation</span>
+                                        </button>
+                                        <button class="scenario-btn" data-scenario="warning">
+                                            <strong>Warning</strong>
+                                            <span>Rising stress</span>
+                                        </button>
+                                        <button class="scenario-btn" data-scenario="hdf">
+                                            <strong>HDF Fault</strong>
+                                            <span>Heat dissipation</span>
+                                        </button>
+                                        <button class="scenario-btn" data-scenario="pwf">
+                                            <strong>PWF Fault</strong>
+                                            <span>Spindle overload</span>
+                                        </button>
+                                        <button class="scenario-btn" data-scenario="twf">
+                                            <strong>TWF Fault</strong>
+                                            <span>Tool wear critical</span>
+                                        </button>
+                                        <button class="scenario-btn" data-scenario="osf">
+                                            <strong>OSF Fault</strong>
+                                            <span>Overstrain limit</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="twin-physics-summary">
+                                    <h4>Physical State Breakdown</h4>
+                                    <ul class="physics-list">
+                                        <li><span>Air to Process Temp Delta:</span> <strong id="twinDeltaT">10.4 K</strong></li>
+                                        <li><span>Calculated Spindle Power:</span> <strong id="twinPower">6,220 W</strong> (Bounds: 3.5k - 9.0k W)</li>
+                                        <li><span>Overstrain Product (Wear × Torque):</span> <strong id="twinOverstrain">1,407</strong></li>
+                                        <li><span>Vibration Amplitude:</span> <strong id="twinVibText">1.52 mm/s</strong> <span class="badge badge-xs">Separate Sensor</span></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+
+                <!-- ===============================================================
+                     SECTION 3: LIVE MONITORING
+                ================================================================ -->
+                <section id="section-monitoring" class="app-section">
+                    
+                    <!-- Monitoring Control Strip -->
+                    <div class="monitoring-control-bar card glass-card">
+                        <div class="monitoring-status">
+                            <span class="live-pulse"></span>
+                            <div>
+                                <strong id="telemetryStatusText">TELEMETRY STREAMING ACTIVE</strong>
+                                <small id="telemetryStatusSub">Sampling interval: 2000 ms via /api/simulator/readings</small>
+                            </div>
+                        </div>
+
+                        <div class="telemetry-actions">
+                            <button id="btnToggleChartMode" class="btn btn-sm btn-outline">
+                                View Mode: All Metrics
+                            </button>
+                            <button id="btnFlushHistory" class="btn btn-sm btn-outline">
+                                Clear Buffer
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Live Multi-Metric Chart Card -->
+                    <div class="card glass-card graph-card-expanded">
+                        <div class="graph-header">
+                            <div>
+                                <h3>Multi-Channel Machine Telemetry Trend</h3>
+                                <p class="card-subtitle">Continuous rolling window of temperature, rotational speed, torque, wear, and vibration</p>
+                            </div>
+                            <div class="graph-legend-interactive">
+                                <span class="legend-item"><i class="legend-box" style="background:#ff7b7b;"></i> Process Temp (°C)</span>
+                                <span class="legend-item"><i class="legend-box" style="background:#00e5ff;"></i> RPM / 50</span>
+                                <span class="legend-item"><i class="legend-box" style="background:#35d5a4;"></i> Torque (Nm)</span>
+                                <span class="legend-item"><i class="legend-box" style="background:#ffb703;"></i> Wear (min) / 4</span>
+                                <span class="legend-item"><i class="legend-box" style="background:#a78bfa;"></i> Vibration (mm/s) × 10</span>
+                            </div>
+                        </div>
+
+                        <div class="canvas-wrapper">
+                            <canvas id="liveTelemetryCanvas"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Live Numerical Telemetry Grid -->
+                    <div class="telemetry-numerical-grid">
+                        <div class="telemetry-tile">
+                            <div class="tile-label">AIR TEMP [K]</div>
+                            <div class="tile-value" id="numAirK">298.2 K</div>
+                            <div class="tile-sub" id="numAirC">25.1 °C</div>
+                        </div>
+                        <div class="telemetry-tile">
+                            <div class="tile-label">PROCESS TEMP [K]</div>
+                            <div class="tile-value" id="numProcK">308.6 K</div>
+                            <div class="tile-sub" id="numProcC">35.4 °C</div>
+                        </div>
+                        <div class="telemetry-tile">
+                            <div class="tile-label">ROTATIONAL SPEED</div>
+                            <div class="tile-value" id="numRpm">1480 RPM</div>
+                            <div class="tile-sub" id="numAngular">155.0 rad/s</div>
+                        </div>
+                        <div class="telemetry-tile">
+                            <div class="tile-label">TORQUE</div>
+                            <div class="tile-value" id="numTorque">40.2 Nm</div>
+                            <div class="tile-sub" id="numPowerCalc">6.2 kW Power</div>
+                        </div>
+                        <div class="telemetry-tile">
+                            <div class="tile-label">TOOL WEAR</div>
+                            <div class="tile-value" id="numWear">35.0 min</div>
+                            <div class="tile-sub">Limit: 200 min</div>
+                        </div>
+                        <div class="telemetry-tile">
+                            <div class="tile-label">VIBRATION (NON-ML)</div>
+                            <div class="tile-value text-cyan" id="numVib">1.52 mm/s</div>
+                            <div class="tile-sub">ISO 10816 Standard</div>
+                        </div>
+                    </div>
+
+                </section>
+
+
+                <!-- ===============================================================
+                     SECTION 4: AI PREDICTION (REAL ML INFERENCE)
+                ================================================================ -->
+                <section id="section-prediction" class="app-section">
+                    
+                    <div class="prediction-grid">
+                        
+                        <!-- Manual Parameter Input Form -->
+                        <div class="card glass-card">
+                            <div class="card-header">
+                                <div>
+                                    <h3>Machine Input Parameters</h3>
+                                    <p class="card-subtitle">Submits inputs to the trained Random Forest model through /api/predict</p>
+                                </div>
+                                <span class="badge badge-success" id="predictModelBadge">MODEL LOADED</span>
+                            </div>
+
+                            <!-- Quick Preset Buttons -->
+                            <div class="preset-strip">
+                                <span class="preset-label">Quick Test Presets:</span>
+                                <button class="btn btn-xs btn-outline preset-btn" data-preset="healthy">Normal Healthy</button>
+                                <button class="btn btn-xs btn-outline preset-btn" data-preset="hdf">Thermal (HDF)</button>
+                                <button class="btn btn-xs btn-outline preset-btn" data-preset="pwf">Overload (PWF)</button>
+                                <button class="btn btn-xs btn-outline preset-btn" data-preset="twf">Worn Tool (TWF)</button>
+                            </div>
+
+                            <form id="predictionForm" class="prediction-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="inputMachineType">Product Quality Type:</label>
+                                        <select id="inputMachineType" class="form-control">
+                                            <option value="L">L - Low Quality (50% variants)</option>
+                                            <option value="M" selected>M - Medium Quality (30% variants)</option>
+                                            <option value="H">H - High Quality (20% variants)</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="tempUnitToggle">Temperature Units:</label>
+                                        <div class="toggle-group">
+                                            <button type="button" class="btn btn-xs btn-outline active" id="btnUnitK">Kelvin (K)</button>
+                                            <button type="button" class="btn btn-xs btn-outline" id="btnUnitC">Celsius (°C)</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="inputAirTemp" id="lblAirTemp">Air Temperature [K]:</label>
+                                        <input type="number" id="inputAirTemp" class="form-control" step="0.1" value="298.2" min="250" max="350" required>
+                                        <small class="form-hint" id="hintAirTemp">Nominal: ~298.2 K (25.0 °C)</small>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="inputProcTemp" id="lblProcTemp">Process Temperature [K]:</label>
+                                        <input type="number" id="inputProcTemp" class="form-control" step="0.1" value="308.6" min="250" max="370" required>
+                                        <small class="form-hint" id="hintProcTemp">Nominal: ~308.6 K (35.4 °C)</small>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="inputRpm">Rotational Speed [rpm]:</label>
+                                        <input type="number" id="inputRpm" class="form-control" step="1" value="1500" min="500" max="4000" required>
+                                        <small class="form-hint">Standard operating range: 1200 - 1800 RPM</small>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="inputTorque">Torque [Nm]:</label>
+                                        <input type="number" id="inputTorque" class="form-control" step="0.1" value="40.0" min="0" max="150" required>
+                                        <small class="form-hint">Standard operating range: 25 - 55 Nm</small>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="inputToolWear">Tool Wear Time [min]:</label>
+                                    <input type="number" id="inputToolWear" class="form-control" step="1" value="25" min="0" max="500" required>
+                                    <small class="form-hint">Flank wear critical lifespan threshold: 200 - 240 min</small>
+                                </div>
+
+                                <div class="vibration-disclaimer-card">
+                                    <span class="disc-icon">⚠️</span>
+                                    <span><strong>UCI Dataset Consistency Notice:</strong> Vibration is deliberately NOT included as an input because the official AI4I 2020 dataset does not contain vibration. Vibration is monitored separately on the dashboard as a physical simulation.</span>
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary btn-block" id="btnSubmitPredict">
+                                        <span>⚡ Execute AI Prediction</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Real ML Prediction Output Card -->
+                        <div class="card glass-card prediction-results-card">
+                            <div class="card-header">
+                                <h3>Inference Output & Diagnostics</h3>
+                                <span class="badge" id="predictionStatusBadge">AWAITING INPUT</span>
+                            </div>
+
+                            <div class="result-placeholder" id="predictionPlaceholder">
+                                <div class="placeholder-icon">🔮</div>
+                                <h4>No Prediction Executed Yet</h4>
+                                <p>Adjust parameters and click <strong>"Execute AI Prediction"</strong> to run inference through the trained Scikit-learn pipeline.</p>
+                            </div>
+
+                            <div class="result-details" id="predictionDetails" style="display: none;">
+                                
+                                <!-- Probability Meter -->
+                                <div class="prob-meter-wrap">
+                                    <div class="prob-header">
+                                        <span>Estimated Failure Probability:</span>
+                                        <strong id="predProbValue">0.0%</strong>
+                                    </div>
+                                    <div class="prob-track">
+                                        <div class="prob-fill" id="predProbFill" style="width: 0%;"></div>
+                                    </div>
+                                    <div class="prob-labels">
+                                        <span>0% Safe</span>
+                                        <span>20% Warning</span>
+                                        <span>50% Critical</span>
+                                        <span>100% Failure</span>
+                                    </div>
+                                </div>
+
+                                <!-- Classification Tag -->
+                                <div class="decision-box" id="predDecisionBox">
+                                    <div class="decision-class" id="predClassLabel">OPTIMAL - HEALTHY</div>
+                                    <div class="decision-sub" id="predClassSub">Machine parameters are within normal tolerances.</div>
+                                </div>
+
+                                <!-- Failure Mode Diagnosis -->
+                                <div class="diag-section">
+                                    <h4>Mechanical Failure Mode Diagnosis</h4>
+                                    <div id="predFailureModeBox" class="diag-content">
+                                        No active failure mode detected.
+                                    </div>
+                                </div>
+
+                                <!-- Recommended Maintenance Action -->
+                                <div class="diag-section">
+                                    <h4>Recommended Engineering Action</h4>
+                                    <div id="predRecommendationBox" class="recom-content">
+                                        Continue standard operating schedule.
+                                    </div>
+                                </div>
+
+                                <!-- Rule-Based vs ML Comparison -->
+                                <div class="ml-vs-rules-box" id="predComparisonBox">
+                                    <div class="comp-title">ML Model vs Rule-Based Thresholds:</div>
+                                    <div class="comp-body" id="predComparisonText">
+                                        Both ML and rule-based checks agree on machine status.
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- ===============================================================
+                     SECTION 5: ALERT CENTRE
+                ================================================================ -->
+                <section id="section-alerts" class="app-section">
+                    
+                    <div class="alerts-header-bar card glass-card">
+                        <div class="alerts-filters">
+                            <label>Filter Severity:</label>
+                            <div class="pill-group" id="alertSeverityFilter">
+                                <button class="pill-btn active" data-sev="ALL">All Alerts</button>
+                                <button class="pill-btn" data-sev="CRITICAL">Critical</button>
+                                <button class="pill-btn" data-sev="WARNING">Warning</button>
+                            </div>
+                        </div>
+
+                        <div class="alerts-ack-filter">
+                            <label>Status:</label>
+                            <select id="alertAckFilter" class="styled-select">
+                                <option value="all">All Events</option>
+                                <option value="0" selected>Unacknowledged Only</option>
+                                <option value="1">Acknowledged Only</option>
+                            </select>
+                        </div>
+
+                        <button id="btnRefreshAlerts" class="btn btn-sm btn-outline">
+                            🔄 Refresh
+                        </button>
+                    </div>
+
+                    <div class="card glass-card">
+                        <div class="card-header">
+                            <h3>Persisted Alert Events (SQLite)</h3>
+                            <small class="text-muted">Distinguishes ML failure risk from rule threshold triggers</small>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="data-table" id="alertsTable">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Timestamp</th>
+                                        <th>Severity</th>
+                                        <th>Source</th>
+                                        <th>Alert Message</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="alertsTableBody">
+                                    <tr><td colspan="7" class="text-center">Loading alerts from SQLite...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </section>
+
+
+                <!-- ===============================================================
+                     SECTION 6: MAINTENANCE HISTORY
+                ================================================================ -->
+                <section id="section-maintenance" class="app-section">
+                    
+                    <div class="maint-action-bar">
+                        <div class="search-input-wrap">
+                            <input type="text" id="maintSearchInput" class="form-control" placeholder="Search technician, component, notes...">
+                        </div>
+
+                        <div class="maint-buttons">
+                            <button id="btnOpenMaintModal" class="btn btn-primary">
+                                + Log Maintenance Activity
+                            </button>
+                            <a href="/api/maintenance/export" class="btn btn-outline" id="btnExportCsv">
+                                📥 Export CSV
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="card glass-card">
+                        <div class="card-header">
+                            <h3>Maintenance & Service Records</h3>
+                            <small class="text-muted">Persisted in SQLite database (table: maintenance_events)</small>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="data-table" id="maintTable">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Timestamp</th>
+                                        <th>Technician</th>
+                                        <th>Action</th>
+                                        <th>Component</th>
+                                        <th>Description</th>
+                                        <th>Notes</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="maintTableBody">
+                                    <tr><td colspan="7" class="text-center">Loading maintenance history...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Modal for Logging Maintenance -->
+                    <div class="modal-backdrop" id="maintModal">
+                        <div class="modal-card">
+                            <div class="modal-header">
+                                <h3>Record Maintenance Action</h3>
+                                <button class="modal-close" id="btnModalClose">×</button>
+                            </div>
+                            <form id="maintForm">
+                                <div class="form-group">
+                                    <label for="maintTech">Technician / Engineer Name:</label>
+                                    <input type="text" id="maintTech" class="form-control" required placeholder="e.g. Er. Rajesh Kumar">
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="maintActionType">Action Type:</label>
+                                        <select id="maintActionType" class="form-control">
+                                            <option value="INSPECTION">Inspection / Diagnostics</option>
+                                            <option value="TOOL_REPLACEMENT">Tool Insert Replacement</option>
+                                            <option value="LUBRICATION">Spindle Lubrication / Coolant</option>
+                                            <option value="CALIBRATION">Sensor Calibration</option>
+                                            <option value="REPAIR">Mechanical Repair / Overhaul</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="maintComponent">Target Component:</label>
+                                        <select id="maintComponent" class="form-control">
+                                            <option value="CUTTING_TOOL">Cutting Tool / Insert</option>
+                                            <option value="SPINDLE_BEARING">Spindle & Rotor Bearings</option>
+                                            <option value="COOLING_SYSTEM">Coolant & Heat Exchanger</option>
+                                            <option value="MOTOR_DRIVE">Motor Inverter & Electrical Drive</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="maintDesc">Description of Action Taken:</label>
+                                    <textarea id="maintDesc" class="form-control" rows="3" required placeholder="Describe steps performed, parts replaced, and condition..."></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="maintNotes">Engineering Notes / Measurements:</label>
+                                    <input type="text" id="maintNotes" class="form-control" placeholder="e.g. Tool wear offset reset to 0; bearing runout < 2 microns">
+                                </div>
+
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-outline" id="btnModalCancel">Cancel</button>
+                                    <button type="submit" class="btn btn-primary">Save to Database</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                </section>
+
+
+                <!-- ===============================================================
+                     SECTION 7: MODEL PERFORMANCE
+                ================================================================ -->
+                <section id="section-model-perf" class="app-section">
+                    
+                    <div class="perf-header-card card glass-card">
+                        <div>
+                            <h3>Real Model Evaluation (UCI AI4I 2020 Dataset)</h3>
+                            <p class="card-subtitle">Values loaded directly from backend training evaluation (models/metrics.json)</p>
+                        </div>
+                        <div class="badge badge-info">RandomForestClassifier (Balanced)</div>
+                    </div>
+
+                    <!-- Metrics Grid -->
+                    <div class="kpi-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">OVERALL ACCURACY</div>
+                            <div class="stat-value"><span id="metricAccuracy">--</span><span class="unit">%</span></div>
+                            <div class="stat-subtext">Overall correct classifications on test split</div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-label">FAILURE CLASS RECALL</div>
+                            <div class="stat-value text-cyan"><span id="metricRecall">--</span><span class="unit">%</span></div>
+                            <div class="stat-subtext">Critical metric: % of actual failures detected</div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-label">FAILURE PRECISION</div>
+                            <div class="stat-value"><span id="metricPrecision">--</span><span class="unit">%</span></div>
+                            <div class="stat-subtext">% of predicted failures that were true failures</div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-label">ROC - AUC SCORE</div>
+                            <div class="stat-value"><span id="metricRocAuc">--</span></div>
+                            <div class="stat-subtext">Discrimination ability across all thresholds</div>
+                        </div>
+                    </div>
+
+                    <!-- Confusion Matrix & Class Imbalance -->
+                    <div class="dashboard-split-grid">
+                        
+                        <!-- Confusion Matrix Table Card -->
+                        <div class="card glass-card">
+                            <div class="card-header">
+                                <h3>Confusion Matrix (Test Set: N = 2,000)</h3>
+                            </div>
+                            <div class="confusion-matrix-table-wrap">
+                                <table class="matrix-table">
+                                    <thead>
+                                        <tr>
+                                            <th></th>
+                                            <th>Predicted Healthy (0)</th>
+                                            <th>Predicted Failure (1)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <th>Actual Healthy (0)</th>
+                                            <td class="cell-tn" id="cmTN">--<br><small>True Negative (TN)</small></td>
+                                            <td class="cell-fp" id="cmFP">--<br><small>False Positive (FP - False Alarm)</small></td>
+                                        </tr>
+                                        <tr>
+                                            <th>Actual Failure (1)</th>
+                                            <td class="cell-fn" id="cmFN">--<br><small>False Negative (FN - Missed!)</small></td>
+                                            <td class="cell-tp" id="cmTP">--<br><small>True Positive (TP - Caught!)</small></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="matrix-explanation">
+                                <small><strong>Why Failure Recall Matters:</strong> In mechanical predictive maintenance, a False Negative (missed machine breakdown) causes catastrophic production stoppage and costly spindle damage. A False Positive is merely a preventative inspection. Therefore, <code>class_weight='balanced'</code> is used to penalize missed failures.</small>
+                            </div>
+                        </div>
+
+                        <!-- Class Imbalance & Feature Importances -->
+                        <div class="card glass-card">
+                            <div class="card-header">
+                                <h3>Class Imbalance & Feature Importance</h3>
+                            </div>
+                            
+                            <div class="imbalance-bar-wrap">
+                                <div class="imbalance-header">
+                                    <span>Dataset Class Ratio (10,000 samples):</span>
+                                    <span><strong>96.6% Healthy</strong> vs <strong>3.4% Failure</strong></span>
+                                </div>
+                                <div class="imbalance-bar">
+                                    <div class="imbalance-healthy" style="width: 96.6%;"></div>
+                                    <div class="imbalance-fail" style="width: 3.4%;"></div>
+                                </div>
+                            </div>
+
+                            <div class="feature-importance-list">
+                                <h4>Top Feature Importances (Random Forest):</h4>
+                                <div id="featureImportanceBars" class="feat-bars-container">
+                                    <!-- Populated dynamically from metrics.json -->
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- ===============================================================
+                     SECTION 8: ABOUT / PROJECT INFORMATION
+                ================================================================ -->
+                <section id="section-about" class="app-section">
+                    
+                    <div class="card glass-card about-hero">
+                        <div class="about-tag">DEPARTMENT OF MECHANICAL ENGINEERING • MDM MINI PROJECT</div>
+                        <h2>SmartTwin AI: Digital Twin for Smart Manufacturing</h2>
+                        <p class="about-lead">
+                            An AI-driven Digital Twin combining continuous physical machine telemetry simulation with machine learning predictive maintenance to detect tool wear, thermal dissipation failures, and mechanical overstrain before catastrophic plant breakdown occurs.
+                        </p>
+                    </div>
+
+                    <div class="about-grid">
+                        
+                        <div class="card glass-card">
+                            <h3>1. Problem Statement & Motivation</h3>
+                            <p>
+                                Traditional industrial maintenance relies on either <strong>reactive maintenance</strong> ("run until failure") or rigid <strong>preventative maintenance</strong> (fixed time intervals). Both approaches lead to either expensive catastrophic machine damage or premature replacement of functioning tooling.
+                            </p>
+                            <p>
+                                <strong>SmartTwin AI</strong> bridges this gap by creating an active software Digital Twin that continuously tracks thermal gradients, rotational speeds, and tool fatigue to predict failure probability with trained machine learning.
+                            </p>
+                        </div>
+
+                        <div class="card glass-card">
+                            <h3>2. The AI4I 2020 Dataset & Features</h3>
+                            <p>The system is trained on the official UCI AI4I 2020 Predictive Maintenance Dataset using 6 validated industrial features:</p>
+                            <ul class="bullet-list">
+                                <li><strong>Type:</strong> Machine quality variant (L: 50%, M: 30%, H: 20%).</li>
+                                <li><strong>Air Temperature [K]:</strong> Ambient temperature in Kelvin.</li>
+                                <li><strong>Process Temperature [K]:</strong> Internal machine temperature in Kelvin.</li>
+                                <li><strong>Rotational Speed [rpm]:</strong> Spindle motor velocity.</li>
+                                <li><strong>Torque [Nm]:</strong> Cutting force torque output.</li>
+                                <li><strong>Tool Wear [min]:</strong> Cumulative insert cutting time.</li>
+                            </ul>
+                        </div>
+
+                        <div class="card glass-card">
+                            <h3>3. Failure Modes Diagnosed</h3>
+                            <ul class="bullet-list">
+                                <li><strong>Tool Wear Failure (TWF):</strong> Critical flank wear (>200 min).</li>
+                                <li><strong>Heat Dissipation Failure (HDF):</strong> Low thermal gradient (ΔT &lt; 8.6 K) at low airflow speeds.</li>
+                                <li><strong>Power Failure (PWF):</strong> Mechanical power outside safe 3,500 W - 9,000 W envelope.</li>
+                                <li><strong>Overstrain Failure (OSF):</strong> Product of torque and wear exceeding metallurgical limits.</li>
+                            </ul>
+                        </div>
+
+                        <div class="card glass-card">
+                            <h3>4. Limitations & Future Scope</h3>
+                            <ul class="bullet-list">
+                                <li><strong>Simulation Boundaries:</strong> Telemetry is generated via physics simulation; physical deployment requires microcontrollers (e.g. ESP32, Modbus).</li>
+                                <li><strong>Vibration Segregation:</strong> Vibration is simulated for visualization and rule checks, but correctly excluded from the ML pipeline as the AI4I dataset lacks vibration.</li>
+                                <li><strong>Future Enhancements:</strong> Remaining Useful Life (RUL) regression, vibration FFT spectrum analysis, and OPC-UA industrial protocol support.</li>
+                            </ul>
+                        </div>
+
+                    </div>
+
+                </section>
+
+            </main>
+
+            <!-- Bottom Application Footer -->
+            <footer class="app-footer">
+                <div class="footer-left">
+                    <strong>SmartTwin AI</strong> • Mechanical Engineering MDM Mini Project 2026
+                </div>
+                <div class="footer-right">
+                    <span>FastAPI + Scikit-learn + SQLite • Local Windows Demonstration</span>
+                </div>
+            </footer>
+
+        </div>
+    </div>
+
+    <!-- Main Application JavaScript -->
+    <script src="/script.js"></script>
+
+</body>
+
+</html>
