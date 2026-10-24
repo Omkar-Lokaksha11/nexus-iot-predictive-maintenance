@@ -41,14 +41,28 @@ class MachineSimulator:
         self.max_history: int = 100
         self.step_count: int = 0
 
+        # Stochastic process states and simulation metadata
+        self.vibration_state: float = 0.0
+        self.tool_wear_rate: float = 0.15
+        self.simulated_time_scale: str = "1 step = 1 simulated min"
+        self.vibration_source: str = "Simulated"
+
     def set_scenario(self, scenario: str):
-        """Sets the operating scenario."""
+        """Sets the operating scenario with physically grounded parameter initialization."""
         valid_scenarios = ["normal", "warning", "hdf", "pwf", "twf", "osf"]
         clean_scenario = str(scenario).lower().strip()
         if clean_scenario in valid_scenarios:
             self.scenario = clean_scenario
         else:
             self.scenario = "normal"
+
+        # When transitioning into TWF scenario (simulating an aged cutting tool approaching failure threshold):
+        if self.scenario == "twf":
+            if self.tool_wear < 196.0:
+                self.tool_wear = 196.0
+        elif self.scenario == "osf":
+            if self.tool_wear < 185.0:
+                self.tool_wear = 185.0
 
     def set_machine_type(self, m_type: str):
         if str(m_type).upper() in ["L", "M", "H"]:
@@ -61,14 +75,16 @@ class MachineSimulator:
         self.is_paused = False
 
     def reset(self):
-        """Resets simulator to factory nominal values."""
+        """Resets simulator to factory nominal values and starts a new cutting tool wear cycle."""
         self.step_count = 0
         self.air_temperature_k = 298.2
         self.process_temperature_k = 308.6
         self.rotational_speed = 1480.0
         self.torque = 40.0
         self.tool_wear = 20.0
+        self.tool_wear_rate = 0.15
         self.vibration = 1.45
+        self.vibration_state = 0.0
         self.scenario = "normal"
         self.health_score = 96.0
         self.overall_status = "OPTIMAL"
@@ -120,95 +136,138 @@ class MachineSimulator:
 
         # Target setpoints depending on scenario with realistic industrial harmonics
         if self.scenario == "normal":
-            # Normal machining: subtle spindle load harmonics & ambient air drift
-            cycle_rpm = 36.0 * math.sin(t * 0.32) + 14.0 * math.cos(t * 0.65) + random.uniform(-6.0, 6.0)
+            # Normal machining: subtle spindle load variations & ambient air drift
+            cycle_rpm = 28.0 * math.sin(t * 0.22) + 12.0 * math.cos(t * 0.45) + random.uniform(-4.0, 4.0)
             target_rpm = 1480.0 + cycle_rpm
 
-            cycle_torque = 4.2 * math.cos(t * 0.32) + 1.8 * math.sin(t * 0.65) + random.uniform(-1.0, 1.0)
+            cycle_torque = 3.6 * math.cos(t * 0.22) + 1.4 * math.sin(t * 0.45) + random.uniform(-0.8, 0.8)
             target_torque = 40.0 + cycle_torque
 
-            target_air = 298.2 + 0.35 * math.sin(t * 0.05) + random.uniform(-0.1, 0.1)
-            delta_t = 10.4 + 1.2 * math.sin(t * 0.22) + random.uniform(-0.25, 0.25)
+            target_air = 298.2 + 0.30 * math.sin(t * 0.04) + random.uniform(-0.08, 0.08)
+            delta_t = 10.4 + 1.0 * math.sin(t * 0.18) + random.uniform(-0.15, 0.15)
             target_proc = target_air + delta_t
-
-            wear_increment = 0.25
-            cycle_vib = 0.32 * math.sin(t * 0.48) + 0.12 * math.cos(t * 0.95) + random.uniform(-0.05, 0.05)
-            target_vib = 1.48 + cycle_vib
 
         elif self.scenario == "warning":
             # Mechanical stress operation (approaching continuous boundaries)
-            cycle_rpm = 46.0 * math.sin(t * 0.35) + random.uniform(-8.0, 8.0)
+            cycle_rpm = 38.0 * math.sin(t * 0.25) + random.uniform(-6.0, 6.0)
             target_rpm = 1560.0 + cycle_rpm
 
-            cycle_torque = 4.8 * math.cos(t * 0.35) + random.uniform(-1.5, 1.5)
+            cycle_torque = 4.2 * math.cos(t * 0.25) + random.uniform(-1.2, 1.2)
             target_torque = 54.5 + cycle_torque
 
-            target_air = 300.5 + 0.4 * math.sin(t * 0.05) + random.uniform(-0.1, 0.1)
-            delta_t = 12.8 + 1.2 * math.sin(t * 0.2) + random.uniform(-0.2, 0.2)
+            target_air = 300.5 + 0.35 * math.sin(t * 0.05) + random.uniform(-0.08, 0.08)
+            delta_t = 12.8 + 1.0 * math.sin(t * 0.15) + random.uniform(-0.15, 0.15)
             target_proc = target_air + delta_t
 
-            wear_increment = 0.50
-            target_vib = 2.45 + 0.30 * math.sin(t * 0.5) + random.uniform(-0.08, 0.08)
-
         elif self.scenario == "hdf":
-            # Heat Dissipation Fault: Restricted airflow & ventilation collapse (Process - Air < 8.6 K at low RPM)
-            target_air = 303.8 + 0.3 * math.sin(t * 0.08) + random.uniform(-0.1, 0.1)
-            target_proc = 309.8 + 0.3 * math.cos(t * 0.08) + random.uniform(-0.1, 0.1)
-            target_rpm = 1320.0 + 25.0 * math.sin(t * 0.25) + random.uniform(-6.0, 6.0)  # Below 1380 RPM threshold
-            target_torque = 48.0 + 2.5 * math.cos(t * 0.3) + random.uniform(-1.0, 1.0)
-            wear_increment = 0.30
-            target_vib = 2.25 + 0.2 * math.sin(t * 0.4) + random.uniform(-0.08, 0.08)
+            # Heat Dissipation Fault: Restricted cooling airflow (Process - Air < 8.6 K at low RPM < 1380)
+            target_air = 303.8 + 0.25 * math.sin(t * 0.06) + random.uniform(-0.08, 0.08)
+            target_proc = 309.8 + 0.25 * math.cos(t * 0.06) + random.uniform(-0.08, 0.08)
+            target_rpm = 1320.0 + 20.0 * math.sin(t * 0.20) + random.uniform(-5.0, 5.0)  # Below 1380 RPM threshold
+            target_torque = 47.0 + 2.0 * math.cos(t * 0.25) + random.uniform(-0.8, 0.8)
 
         elif self.scenario == "pwf":
             # Power Failure: Spindle drive overload (Delivered power P > 9,000 W)
-            target_air = 301.2 + 0.3 * math.sin(t * 0.08)
-            target_proc = 314.5 + 0.8 * math.cos(t * 0.15)
-            target_rpm = 1250.0 + 28.0 * math.sin(t * 0.25) + random.uniform(-8.0, 8.0)
-            target_torque = 74.5 + 4.0 * math.cos(t * 0.25) + random.uniform(-1.5, 1.5)  # Surging to 75-79 Nm
-            wear_increment = 0.65
-            target_vib = 3.25 + 0.30 * math.sin(t * 0.5) + random.uniform(-0.1, 0.1)
+            target_air = 301.2 + 0.25 * math.sin(t * 0.06)
+            target_proc = 314.5 + 0.60 * math.cos(t * 0.12)
+            target_rpm = 1250.0 + 22.0 * math.sin(t * 0.20) + random.uniform(-6.0, 6.0)
+            target_torque = 74.5 + 3.5 * math.cos(t * 0.20) + random.uniform(-1.2, 1.2)  # Surging to 74-78 Nm
 
         elif self.scenario == "twf":
-            # Tool Wear Failure: Cutting insert flank wear exceeds 200 min critical lifespan
-            if self.tool_wear < 202.0:
-                self.tool_wear = 202.0
-            wear_increment = 1.60
-
-            target_air = 300.8 + 0.3 * math.sin(t * 0.08)
-            target_proc = 315.2 + 0.6 * math.cos(t * 0.15)
-            target_rpm = 1455.0 + 25.0 * math.sin(t * 0.3) + random.uniform(-8.0, 8.0)
-            target_torque = 56.5 + 3.5 * math.cos(t * 0.3) + random.uniform(-1.5, 1.5)  # Friction increase
-            target_vib = 3.45 + 0.30 * math.sin(t * 0.6) + random.uniform(-0.1, 0.1)    # Severe flank chatter (>3.2 mm/s)
+            # Tool Wear Failure: Accelerated tertiary flank wear regime
+            target_air = 300.8 + 0.25 * math.sin(t * 0.06)
+            target_proc = 315.2 + 0.50 * math.cos(t * 0.12)
+            target_rpm = 1455.0 + 20.0 * math.sin(t * 0.25) + random.uniform(-6.0, 6.0)
+            target_torque = 56.5 + 2.8 * math.cos(t * 0.25) + random.uniform(-1.2, 1.2)
 
         elif self.scenario == "osf":
             # Overstrain Failure: Combined stress product (Wear x Torque) exceeds metallurgical limit
-            if self.tool_wear < 192.0:
-                self.tool_wear = 192.0
-            wear_increment = 0.90
-
-            target_air = 302.0 + 0.4 * math.sin(t * 0.08)
-            target_proc = 316.5 + 0.6 * math.cos(t * 0.15)
-            target_rpm = 1380.0 + 22.0 * math.sin(t * 0.3) + random.uniform(-8.0, 8.0)
-            target_torque = 68.5 + 3.0 * math.cos(t * 0.3) + random.uniform(-1.5, 1.5)
-            target_vib = 3.20 + 0.25 * math.sin(t * 0.5) + random.uniform(-0.1, 0.1)
+            target_air = 302.0 + 0.30 * math.sin(t * 0.06)
+            target_proc = 316.5 + 0.50 * math.cos(t * 0.12)
+            target_rpm = 1380.0 + 18.0 * math.sin(t * 0.25) + random.uniform(-6.0, 6.0)
+            target_torque = 68.5 + 2.5 * math.cos(t * 0.25) + random.uniform(-1.2, 1.2)
 
         else:
             target_air = 298.2
             target_proc = 308.6
             target_rpm = 1480.0
             target_torque = 40.0
-            wear_increment = 0.20
-            target_vib = 1.45
 
-        # Smooth low-pass transition filter (physics emulation)
+        # Smooth low-pass transition filter (kinematic dynamics)
         alpha = 0.50
         self.air_temperature_k = round(self.air_temperature_k + alpha * (target_air - self.air_temperature_k), 2)
         self.process_temperature_k = round(self.process_temperature_k + alpha * (target_proc - self.process_temperature_k), 2)
         self.rotational_speed = round(self.rotational_speed + alpha * (target_rpm - self.rotational_speed), 1)
         self.torque = round(self.torque + alpha * (target_torque - self.torque), 2)
-        self.vibration = round(max(0.5, self.vibration + alpha * (target_vib - self.vibration)), 2)
 
-        self.tool_wear = round(min(300.0, self.tool_wear + wear_increment), 1)
+        # ----------------------------------------------------------------------
+        # CUTTING TOOL WEAR MODEL (Documented Taylor Wear Progression)
+        # ----------------------------------------------------------------------
+        # Tool wear is cumulative and non-decreasing. Wear rate is physically
+        # governed by cutting velocity (RPM), cutting load (torque), machine variant,
+        # and operating scenario multiplier.
+        mat_factors = {"L": 1.12, "M": 1.00, "H": 0.88}
+        k_mat = mat_factors.get(self.machine_type, 1.00)
+
+        scenario_wear_factors = {
+            "normal": 1.00,
+            "warning": 1.85,
+            "hdf": 1.05,     # HDF is strictly thermal; wear rate is NOT artificially forced upward
+            "pwf": 2.40,     # High torque drive overload
+            "twf": 4.50,     # Tertiary accelerated flank wear breakdown
+            "osf": 2.80      # Overstrain load product
+        }
+        k_scenario = scenario_wear_factors.get(self.scenario, 1.00)
+
+        rpm_ratio = max(0.5, self.rotational_speed / 1480.0)
+        torque_ratio = max(0.5, self.torque / 40.0)
+        speed_load_factor = (rpm_ratio ** 1.25) * (torque_ratio ** 1.10)
+
+        base_wear_rate = 0.15  # min per simulated machining minute
+        wear_increment = round(base_wear_rate * speed_load_factor * k_mat * k_scenario, 2)
+        self.tool_wear_rate = wear_increment
+
+        # Strict cumulative progression, bounded to 250 min lifecycle limit
+        self.tool_wear = round(min(250.0, self.tool_wear + wear_increment), 2)
+
+        # ----------------------------------------------------------------------
+        # SPINDLE VIBRATION MODEL (Documented Stochastic Physical Dynamics)
+        # ----------------------------------------------------------------------
+        # Combines kinematic spindle running harmonics, cutting chip load,
+        # wear-induced chatter friction, and an AR(1) Gauss-Markov stochastic
+        # perturbation to produce realistic, non-repeating dynamic signals.
+        spindle_harmonic = 0.16 * math.sin(t * 0.28) + 0.06 * math.cos(t * 0.56)
+        rpm_vib_ratio = (self.rotational_speed / 1480.0) ** 1.5
+        torque_vib_ratio = (self.torque - 40.0) / 40.0
+        v_kinematic = 1.45 * rpm_vib_ratio + 0.20 * torque_vib_ratio + spindle_harmonic
+
+        # Flank wear chatter emerges as insert clearance degrades past 150 min
+        if self.tool_wear > 150.0:
+            wear_chatter = 1.20 * (((self.tool_wear - 150.0) / 50.0) ** 1.4)
+        else:
+            wear_chatter = 0.0
+
+        scenario_vib_offsets = {
+            "normal": 0.0,
+            "warning": 0.70,
+            "hdf": 0.05,     # HDF is strictly thermal; vibration remains nominal
+            "pwf": 1.75,     # Heavy electromagnetic and drive train surge
+            "twf": 1.15,     # Insert fracture chatter
+            "osf": 1.45      # Heavy structural deflection
+        }
+        v_scenario = scenario_vib_offsets.get(self.scenario, 0.0)
+
+        # AR(1) Gauss-Markov stochastic continuous perturbation (zero-mean, smooth)
+        phi = 0.70
+        sigma = 0.10
+        white_noise = random.gauss(0.0, 1.0)
+        self.vibration_state = phi * self.vibration_state + math.sqrt(1.0 - phi * phi) * sigma * white_noise
+
+        target_vibration = v_kinematic + wear_chatter + v_scenario + self.vibration_state
+
+        # Low-pass inertia filter
+        alpha_vib = 0.45
+        self.vibration = round(max(0.60, min(4.80, self.vibration + alpha_vib * (target_vibration - self.vibration))), 2)
 
         # Run real ML inference with predictor
         pred_res = self.predictor.predict({
@@ -243,7 +302,10 @@ class MachineSimulator:
             "rotational_speed": self.rotational_speed,
             "torque": self.torque,
             "tool_wear": self.tool_wear,
+            "tool_wear_rate": self.tool_wear_rate,
+            "simulated_time_scale": self.simulated_time_scale,
             "vibration": self.vibration,
+            "vibration_source": self.vibration_source,
             "health_score": self.health_score,
             "overall_status": self.overall_status,
             "operating_mode": self.scenario,
@@ -362,7 +424,10 @@ class MachineSimulator:
             "rotational_speed": self.rotational_speed,
             "torque": self.torque,
             "tool_wear": self.tool_wear,
+            "tool_wear_rate": self.tool_wear_rate,
+            "simulated_time_scale": self.simulated_time_scale,
             "vibration": self.vibration,
+            "vibration_source": self.vibration_source,
             "health_score": self.health_score,
             "overall_status": self.overall_status,
             "operating_mode": self.scenario,

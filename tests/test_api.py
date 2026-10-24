@@ -65,6 +65,13 @@ def test_api_simulator_telemetry_metrics_ranges():
     assert isinstance(reading["vibration"], (int, float))
     assert 0.1 <= reading["vibration"] <= 15.0
 
+    # 6. Tool wear rate & simulation metadata
+    assert "tool_wear_rate" in reading
+    assert isinstance(reading["tool_wear_rate"], (int, float))
+    assert reading["tool_wear_rate"] > 0
+    assert reading.get("simulated_time_scale") == "1 step = 1 simulated min"
+    assert reading.get("vibration_source") == "Simulated"
+
 
 def test_api_simulator_control():
     response = client.post("/api/simulator/control", json={
@@ -262,4 +269,68 @@ def test_api_prediction_field_aliases_regression():
     data2 = resp2.json()
     assert data2["success"] is True
     assert "failure_probability" in data2["prediction"]
+
+
+def test_api_maintenance_validation_rejection():
+    """Verify maintenance validation rules: technician_name >= 2, description >= 5, proper types."""
+    # Too short technician name
+    resp_short_tech = client.post("/api/maintenance", json={
+        "technician_name": "A",
+        "action_type": "INSPECTION",
+        "component": "SPINDLE_BEARING",
+        "description": "Valid description of work performed.",
+        "notes": "",
+        "is_demo": 0
+    })
+    assert resp_short_tech.status_code == 422
+
+    # Too short description
+    resp_short_desc = client.post("/api/maintenance", json={
+        "technician_name": "Valid Tech",
+        "action_type": "INSPECTION",
+        "component": "SPINDLE_BEARING",
+        "description": "Fail",
+        "notes": "",
+        "is_demo": 0
+    })
+    assert resp_short_desc.status_code == 422
+
+
+def test_about_section_and_modal_dom_integrity():
+    """Verify About section 14-part structure, architecture diagram, modal markup, and font scoping."""
+    # Check HTML DOM
+    resp_html = client.get("/")
+    assert resp_html.status_code == 200
+    html = resp_html.text
+
+    # Modal controls
+    assert 'id="maintModal"' in html
+    assert 'id="maintForm"' in html
+    assert 'id="maintTechName"' in html
+    assert 'id="maintActionType"' in html
+    assert 'id="maintComponent"' in html
+    assert 'id="maintDescription"' in html
+    assert 'id="maintNotes"' in html
+    assert 'id="btnSaveMaint"' in html
+
+    # About Section
+    assert 'id="section-about"' in html
+    assert "SIMULATION MODE" in html
+    assert "System Architecture, Predictive Maintenance and Technical Specifications" in html
+    assert "arch-diagram-container" in html
+    assert "01" in html
+    assert "14" in html
+
+    # Check CSS scoping
+    resp_css = client.get("/style.css")
+    assert resp_css.status_code == 200
+    css = resp_css.text
+
+    # Times New Roman strictly under #section-about
+    assert '#section-about' in css
+    assert '"Times New Roman"' in css
+    # Ensure body default font is not Times New Roman
+    assert 'body {' in css
+    assert 'font-family: var(--font-sans);' in css
+
 

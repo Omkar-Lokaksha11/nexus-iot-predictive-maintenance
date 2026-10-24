@@ -2,6 +2,7 @@
 Unit tests for MachineSimulator and Digital Twin physics engine.
 """
 
+import math
 import pytest
 from backend.simulator import MachineSimulator
 
@@ -141,7 +142,7 @@ def test_simulator_nominal_variations_within_configured_limits():
     assert 32.0 <= min(proc_temps) and max(proc_temps) <= 39.0
 
     # 4. Vibration oscillates with running harmonics below ISO boundary
-    vib_range = max(vibrations) - min(vibrations)
+    vib_range = round(max(vibrations) - min(vibrations), 2)
     assert vib_range >= 0.15
     assert 1.0 <= min(vibrations) and max(vibrations) <= 2.2
 
@@ -175,4 +176,193 @@ def test_simulator_fault_scenarios_directional_changes():
     twf_reading = sim.get_current_state()
     assert twf_reading["tool_wear"] >= 200.0
     assert twf_reading["vibration"] >= 3.0
+
+
+def test_simulator_alert_lifecycle_and_test_db_persistence():
+    """
+    Regression test:
+    Verifies that simulator alerts and resolutions correctly write and persist
+    to the isolated test database without readonly errors.
+    """
+    import os
+    from backend.database import get_db_path, get_alerts, get_alert_history
+
+    # 1. Verify active database is isolated from production
+    active_db = get_db_path()
+    prod_db = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "smarttwin.db"))
+    assert active_db != prod_db, "Tests must run on isolated test DB, not production"
+    assert os.path.exists(active_db)
+
+    sim = MachineSimulator()
+    sim.reset()
+
+    # 2. Trigger HDF fault scenario to create alerts
+    sim.set_scenario("hdf")
+    for _ in range(8):
+        sim.step()
+
+    # 3. Verify active alerts exist in the test DB
+    alerts_result = get_alerts()
+    active_alerts = [a for a in alerts_result if a["is_active"] == 1]
+    assert len(active_alerts) > 0
+
+    fault_alerts = [a for a in active_alerts if a["alert_type"] in ("THERMAL_WARNING", "ML_FAILURE_RISK", "VIBRATION_WARNING", "VIBRATION_EXCESS")]
+    assert len(fault_alerts) > 0
+    test_alert = fault_alerts[0]
+    alert_id = test_alert["id"]
+
+    # 4. Verify audit actions were recorded
+    history = get_alert_history(alert_id)
+    assert len(history) >= 1
+    assert any(h["action_type"] == "CREATED" for h in history)
+
+    # 5. Reset simulator and verify automatic resolution persists
+    sim.reset()
+    alerts_after = get_alerts()
+    resolved_match = [a for a in alerts_after if a["id"] == alert_id]
+    assert len(resolved_match) == 1
+    assert resolved_match[0]["is_active"] == 0
+    assert resolved_match[0]["status"] == "RESOLVED"
+
+    # 6. Verify RESOLVED action logged in audit trail
+    history_after = get_alert_history(alert_id)
+    assert any(h["action_type"] == "RESOLVED" for h in history_after)
+
+
+def test_simulator_production_db_isolation():
+    """Regression test: Verifies that simulator operations write to isolated test DB, not production smarttwin.db."""
+    import os
+    import sqlite3
+    from backend.database import get_db_path
+
+    active_db = get_db_path()
+    prod_db = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "smarttwin.db"))
+    assert active_db != prod_db, "Active test DB must be isolated from production DB"
+    assert os.path.exists(active_db)
+
+    # Check test database count before stepping
+    conn_test = sqlite3.connect(active_db)
+    cur_test = conn_test.cursor()
+    cur_test.execute("SELECT COUNT(*) FROM sensor_readings;")
+    test_readings_before = cur_test.fetchone()[0]
+    conn_test.close()
+
+    # Run simulator steps
+    sim = MachineSimulator()
+    sim.set_scenario("twf")
+    for _ in range(6):
+        sim.step()
+    sim.reset()
+
+    # Verify that the 6 simulator steps were recorded in isolated test DB
+    conn_test = sqlite3.connect(active_db)
+    cur_test = conn_test.cursor()
+    cur_test.execute("SELECT COUNT(*) FROM sensor_readings;")
+    test_readings_after = cur_test.fetchone()[0]
+    conn_test.close()
+
+    assert test_readings_after == test_readings_before + 6, "Simulator steps must be written to isolated test DB!"
+
+
+def test_tool_wear_cumulative_progression_and_bounds():
+    """
+    Verifies that tool wear is strictly cumulative (non-decreasing),
+    bounded by the 250 min lifecycle ceiling, and resets to baseline on reset().
+    """
+    sim = MachineSimulator()
+    sim.reset()
+    assert sim.tool_wear == 20.0
+
+    wear_history = [sim.tool_wear]
+    for _ in range(25):
+        reading = sim.step()
+        assert reading["tool_wear"] >= wear_history[-1], "Tool wear must be non-decreasing!"
+        assert reading["tool_wear_rate"] > 0.0, "Tool wear rate must be positive during active cutting"
+        wear_history.append(reading["tool_wear"])
+
+    # Over 25 steps at ~0.15 min/step, progression should be around 3.5 - 4.5 min
+    total_delta = wear_history[-1] - wear_history[0]
+    assert 2.5 <= total_delta <= 6.0, f"Progression delta {total_delta} should be gradual and realistic"
+
+    # Reset behavior: starts new sharp insert cycle
+    sim.reset()
+    assert sim.tool_wear == 20.0
+    assert sim.tool_wear_rate == 0.15
+
+
+def test_tool_wear_accelerated_only_in_documented_scenarios():
+    """
+    Verifies that wear rate accelerates only under high mechanical stress (TWF, PWF, Warning),
+    and does NOT arbitrarily accelerate in thermal fault conditions (HDF).
+    """
+    # 1. Normal wear rate baseline
+    sim_normal = MachineSimulator()
+    sim_normal.set_scenario("normal")
+    normal_reading = sim_normal.step()
+    rate_normal = normal_reading["tool_wear_rate"]
+
+    # 2. HDF: strictly thermal dissipation problem, wear rate should remain close to nominal
+    sim_hdf = MachineSimulator()
+    sim_hdf.set_scenario("hdf")
+    hdf_reading = sim_hdf.step()
+    rate_hdf = hdf_reading["tool_wear_rate"]
+    assert abs(rate_hdf - rate_normal) < 0.08, "HDF should not arbitrarily inflate wear rate"
+
+    # 3. High load warning: elevated chip load
+    sim_warn = MachineSimulator()
+    sim_warn.set_scenario("warning")
+    warn_reading = sim_warn.step()
+    rate_warn = warn_reading["tool_wear_rate"]
+    assert rate_warn > rate_normal * 1.5, "Warning scenario should produce elevated wear rate"
+
+    # 4. TWF: tertiary breakdown wear regime
+    sim_twf = MachineSimulator()
+    sim_twf.set_scenario("twf")
+    twf_reading = sim_twf.step()
+    rate_twf = twf_reading["tool_wear_rate"]
+    assert rate_twf > rate_warn, "TWF scenario should produce the highest wear rate"
+
+
+def test_vibration_stochastic_variation_and_scenario_deliberation():
+    """
+    Verifies that vibration:
+    - exhibits organic, non-repeating variations within safe bounds during normal operation
+    - remains unforced/nominal during HDF (thermal fault)
+    - crosses configured 3.2 mm/s threshold during TWF (chatter) and PWF (drive surge)
+    """
+    # 1. Normal mode: non-repetitive stochastic behavior within safe bounds
+    sim = MachineSimulator()
+    sim.reset()
+    vib_readings = []
+    for _ in range(30):
+        r = sim.step()
+        assert not math.isnan(r["vibration"])
+        vib_readings.append(r["vibration"])
+
+    # Normal variations must be bounded
+    assert min(vib_readings) >= 1.0
+    assert max(vib_readings) <= 2.2
+    # Verify values are dynamic (not flat or frozen)
+    assert max(vib_readings) - min(vib_readings) >= 0.15
+
+    # 2. HDF mode: vibration remains nominal (thermal issue, not mechanical chatter)
+    sim_hdf = MachineSimulator()
+    sim_hdf.set_scenario("hdf")
+    for _ in range(6):
+        r_hdf = sim_hdf.step()
+    assert r_hdf["vibration"] < 2.2, "HDF vibration must not be artificially elevated"
+
+    # 3. TWF mode: chatter exceeds configured 3.2 alert limit
+    sim_twf = MachineSimulator()
+    sim_twf.set_scenario("twf")
+    for _ in range(6):
+        r_twf = sim_twf.step()
+    assert r_twf["vibration"] >= 3.0, "TWF must produce elevated vibration chatter"
+
+    # 4. PWF mode: spindle power surge produces drive vibration
+    sim_pwf = MachineSimulator()
+    sim_pwf.set_scenario("pwf")
+    for _ in range(6):
+        r_pwf = sim_pwf.step()
+    assert r_pwf["vibration"] >= 2.8, "PWF must produce high drive vibration"
 

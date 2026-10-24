@@ -20,6 +20,12 @@ from backend.database import (
     get_alerts,
     get_alert_summary,
     acknowledge_alert,
+    get_alert_by_id,
+    get_alert_history,
+    assign_alert,
+    update_alert_status,
+    record_alert_action,
+    resolve_alert_record,
     add_maintenance_event,
     get_maintenance_events,
     export_history_to_csv,
@@ -126,6 +132,34 @@ class MaintenanceEventRequest(BaseModel):
     description: str = Field(..., min_length=5, max_length=500)
     notes: Optional[str] = Field(default=None, max_length=500)
     is_demo: Optional[int] = Field(default=0, ge=0, le=1)
+
+
+class AlertAssignRequest(BaseModel):
+    assigned_team: str = Field(..., min_length=2, max_length=100, description="e.g. 'Mechanical Maintenance', 'Electrical Maintenance', 'Instrumentation and Automation', 'Reliability Team'")
+    assigned_person: str = Field(..., min_length=2, max_length=100, description="Responsible engineer or technician")
+    priority: Optional[str] = Field(default="MEDIUM", description="'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'")
+    notes: Optional[str] = Field(default=None, max_length=500)
+
+
+class AlertStatusRequest(BaseModel):
+    status: str = Field(..., description="'NEW', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED'")
+    performed_by: Optional[str] = Field(default="Plant Operator", max_length=100)
+    notes: Optional[str] = Field(default=None, max_length=500)
+
+
+class AlertActionRequest(BaseModel):
+    action_performed: str = Field(..., min_length=3, max_length=300, description="Specific maintenance action performed")
+    diagnosis: Optional[str] = Field(default=None, max_length=300, description="Diagnostic observation or physical inspection finding")
+    technician_notes: str = Field(..., min_length=2, max_length=1000, description="Detailed technician logs")
+    performed_by: str = Field(..., min_length=2, max_length=100, description="Technician name or demo user role")
+    status_after: Optional[str] = Field(default="IN_PROGRESS", description="Status transition after recording action")
+
+
+class AlertResolveRequest(BaseModel):
+    resolution_notes: str = Field(..., min_length=5, max_length=1000, description="Mandatory detailed resolution summary")
+    resolution_category: Optional[str] = Field(default="MAINTENANCE_RESOLUTION", description="'CALIBRATION', 'TOOL_REPLACEMENT', 'LUBRICATION', 'HARDWARE_REPAIR', 'PARAMETER_RESET', 'FALSE_ALARM'")
+    resolved_by: str = Field(..., min_length=2, max_length=100, description="Technician or engineer responsible for sign-off")
+    follow_up: Optional[str] = Field(default=None, max_length=500, description="Optional follow-up recommendation or preventive action")
 
 
 # ==============================================================================
@@ -266,19 +300,141 @@ def get_model_metrics():
 @app.get("/api/alerts", tags=["Alerts"])
 def list_alerts(
     severity: Optional[str] = Query(None, description="'ALL', 'CRITICAL', 'WARNING', 'INFO'"),
+    status: Optional[str] = Query(None, description="'ALL', 'NEW', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED'"),
+    assigned: Optional[str] = Query(None, description="'ASSIGNED' or 'UNASSIGNED'"),
+    team: Optional[str] = Query(None, description="Assigned team filter"),
+    search: Optional[str] = Query(None, description="Free text search on message, type, person, or team"),
     acknowledged: Optional[int] = Query(None, description="0 for unacknowledged, 1 for acknowledged"),
     is_active: Optional[int] = Query(None, description="1 for active, 0 for resolved"),
     include_test: bool = Query(False, description="Whether to include internal test-generated alerts"),
     limit: int = Query(50, ge=1, le=200)
 ):
-    """Retrieves persisted machine alerts with filtering and summary metrics."""
-    alerts = get_alerts(severity=severity, acknowledged=acknowledged, is_active=is_active, limit=limit, include_test=include_test)
+    """Retrieves persisted machine alerts with multi-criteria filtering and summary metrics."""
+    alerts = get_alerts(
+        severity=severity,
+        status=status,
+        assigned=assigned,
+        team=team,
+        search=search,
+        acknowledged=acknowledged,
+        is_active=is_active,
+        limit=limit,
+        include_test=include_test
+    )
     summary = get_alert_summary(include_test=include_test)
     return {
         "success": True,
         "count": len(alerts),
         "summary": summary,
         "alerts": alerts
+    }
+
+
+@app.get("/api/alerts/{alert_id}", tags=["Alerts"])
+def get_alert_details(alert_id: int):
+    """Retrieves full incident record including snapshot, team assignment, and audit history."""
+    alert = get_alert_by_id(alert_id)
+    if not alert:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Alert with ID {alert_id} not found.")
+    return {
+        "success": True,
+        "alert": alert
+    }
+
+
+@app.get("/api/alerts/{alert_id}/history", tags=["Alerts"])
+def get_alert_actions_history(alert_id: int):
+    """Retrieves chronological lifecycle and action trail for a specific alert."""
+    history = get_alert_history(alert_id)
+    return {
+        "success": True,
+        "alert_id": alert_id,
+        "count": len(history),
+        "history": history
+    }
+
+
+@app.post("/api/alerts/{alert_id}/assign", tags=["Alerts"])
+def assign_alert_to_team(alert_id: int, payload: AlertAssignRequest):
+    """Assigns an alert to a maintenance team and responsible technician with priority."""
+    updated = assign_alert(
+        alert_id=alert_id,
+        assigned_team=payload.assigned_team,
+        assigned_person=payload.assigned_person,
+        priority=payload.priority or "MEDIUM",
+        notes=payload.notes
+    )
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Alert with ID {alert_id} not found.")
+    return {
+        "success": True,
+        "message": f"Alert {alert_id} assigned to {payload.assigned_team} ({payload.assigned_person}).",
+        "alert": updated
+    }
+
+
+@app.post("/api/alerts/{alert_id}/status", tags=["Alerts"])
+def update_alert_lifecycle_status(alert_id: int, payload: AlertStatusRequest):
+    """Updates the alert lifecycle state ('NEW', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED')."""
+    try:
+        updated = update_alert_status(
+            alert_id=alert_id,
+            new_status=payload.status,
+            performed_by=payload.performed_by or "Plant Operator",
+            notes=payload.notes
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Alert with ID {alert_id} not found.")
+    return {
+        "success": True,
+        "message": f"Alert {alert_id} transitioned to {payload.status.upper()}.",
+        "alert": updated
+    }
+
+
+@app.post("/api/alerts/{alert_id}/action", tags=["Alerts"])
+def record_action_for_alert(alert_id: int, payload: AlertActionRequest):
+    """Records technician actions, physical diagnosis, and notes into persistent SQLite audit history."""
+    updated = record_alert_action(
+        alert_id=alert_id,
+        action_performed=payload.action_performed,
+        diagnosis=payload.diagnosis,
+        technician_notes=payload.technician_notes,
+        performed_by=payload.performed_by,
+        status_after=payload.status_after or "IN_PROGRESS"
+    )
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Alert with ID {alert_id} not found.")
+    return {
+        "success": True,
+        "message": "Maintenance action recorded and persisted to audit log.",
+        "alert": updated
+    }
+
+
+@app.post("/api/alerts/{alert_id}/resolve", tags=["Alerts"])
+def resolve_alert_incident(alert_id: int, payload: AlertResolveRequest):
+    """Officially resolves an alert with mandatory sign-off notes and resolution category."""
+    try:
+        updated = resolve_alert_record(
+            alert_id=alert_id,
+            resolution_notes=payload.resolution_notes,
+            resolution_category=payload.resolution_category or "MAINTENANCE_RESOLUTION",
+            resolved_by=payload.resolved_by,
+            follow_up=payload.follow_up
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
+
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Alert with ID {alert_id} not found.")
+    return {
+        "success": True,
+        "message": f"Alert {alert_id} marked as RESOLVED by {payload.resolved_by}.",
+        "alert": updated
     }
 
 
@@ -361,6 +517,11 @@ def serve_index():
 
 # Mount root directory for static assets
 app.mount("/static", StaticFiles(directory=PROJECT_ROOT), name="static")
+
+# Mount assets directory for machine photography and media
+assets_dir = os.path.join(PROJECT_ROOT, "assets")
+if os.path.exists(assets_dir):
+    app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
 # Direct static routes
 @app.get("/style.css", include_in_schema=False)

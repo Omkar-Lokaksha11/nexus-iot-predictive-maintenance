@@ -24,3 +24,15 @@ Desktop.ini
 # Node modules (if any leftover from legacy NEXUS)
 node_modules/
 npm-debug.log
+.venv/
+*.db
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+backup*/
+*.log
+.env.*
+!.env.example
+test-results/
+playwright-report/

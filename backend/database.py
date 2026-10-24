@@ -14,12 +14,24 @@ DB_FILENAME = "smarttwin.db"
 
 
 def get_db_path() -> str:
+    """
+    Returns the active SQLite database path.
+    Prioritizes SMARTTWIN_DB_PATH environment variable if defined,
+    falling back to the standard production smarttwin.db in the project root.
+    """
+    env_path = os.environ.get("SMARTTWIN_DB_PATH")
+    if env_path and env_path.strip():
+        return os.path.abspath(env_path.strip())
     root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     return os.path.join(root, DB_FILENAME)
 
 
-def get_connection() -> sqlite3.Connection:
-    conn = sqlite3.connect(get_db_path(), timeout=15.0)
+def get_connection(db_path: Optional[str] = None) -> sqlite3.Connection:
+    target_path = db_path or get_db_path()
+    target_dir = os.path.dirname(os.path.abspath(target_path))
+    if target_dir and not os.path.exists(target_dir):
+        os.makedirs(target_dir, exist_ok=True)
+    conn = sqlite3.connect(target_path, timeout=15.0)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -45,6 +57,34 @@ def _migrate_schema(conn: sqlite3.Connection):
     if "is_demo" not in alert_cols:
         cursor.execute("ALTER TABLE alerts ADD COLUMN is_demo INTEGER DEFAULT 0;")
 
+    # Additional workflow and team assignment columns
+    if "status" not in alert_cols:
+        cursor.execute("ALTER TABLE alerts ADD COLUMN status TEXT DEFAULT 'NEW';")
+    if "priority" not in alert_cols:
+        cursor.execute("ALTER TABLE alerts ADD COLUMN priority TEXT DEFAULT 'MEDIUM';")
+    if "assigned_team" not in alert_cols:
+        cursor.execute("ALTER TABLE alerts ADD COLUMN assigned_team TEXT;")
+    if "assigned_person" not in alert_cols:
+        cursor.execute("ALTER TABLE alerts ADD COLUMN assigned_person TEXT;")
+    if "assignment_notes" not in alert_cols:
+        cursor.execute("ALTER TABLE alerts ADD COLUMN assignment_notes TEXT;")
+    if "assigned_at" not in alert_cols:
+        cursor.execute("ALTER TABLE alerts ADD COLUMN assigned_at TEXT;")
+    if "resolution_notes" not in alert_cols:
+        cursor.execute("ALTER TABLE alerts ADD COLUMN resolution_notes TEXT;")
+    if "resolved_by" not in alert_cols:
+        cursor.execute("ALTER TABLE alerts ADD COLUMN resolved_by TEXT;")
+    if "resolution_category" not in alert_cols:
+        cursor.execute("ALTER TABLE alerts ADD COLUMN resolution_category TEXT;")
+
+    # Populate status and priority defaults for existing records
+    cursor.execute("UPDATE alerts SET status = 'RESOLVED' WHERE (status IS NULL OR status = 'NEW') AND is_active = 0;")
+    cursor.execute("UPDATE alerts SET status = 'ASSIGNED' WHERE (status IS NULL OR status = 'NEW') AND acknowledged = 1 AND is_active = 1;")
+    cursor.execute("UPDATE alerts SET status = 'NEW' WHERE status IS NULL;")
+    cursor.execute("UPDATE alerts SET priority = 'HIGH' WHERE (priority IS NULL OR priority = '') AND severity = 'CRITICAL';")
+    cursor.execute("UPDATE alerts SET priority = 'MEDIUM' WHERE (priority IS NULL OR priority = '') AND severity = 'WARNING';")
+    cursor.execute("UPDATE alerts SET priority = 'LOW' WHERE (priority IS NULL OR priority = '') AND severity = 'INFO';")
+
     # Cleanly isolate existing test-generated records and tag seed demo records
     cursor.execute("UPDATE alerts SET is_test = 1, is_active = 0 WHERE alert_type LIKE 'TEST_%';")
     cursor.execute("UPDATE alerts SET is_demo = 1 WHERE message LIKE '[DEMO%' OR alert_type LIKE 'DEMO%';")
@@ -56,12 +96,51 @@ def _migrate_schema(conn: sqlite3.Connection):
     if "is_demo" not in maint_cols:
         cursor.execute("ALTER TABLE maintenance_events ADD COLUMN is_demo INTEGER DEFAULT 0;")
 
+    # 3. Create alert_actions audit trail table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS alert_actions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        alert_id INTEGER NOT NULL,
+        timestamp TEXT NOT NULL,
+        action_type TEXT NOT NULL,
+        performed_by TEXT NOT NULL,
+        status_after TEXT,
+        details TEXT,
+        notes TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(alert_id) REFERENCES alerts(id) ON DELETE CASCADE
+    );
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_alert_actions_alert ON alert_actions(alert_id);")
+
+    # 4. Backfill initial alert_actions if table is empty
+    cursor.execute("SELECT COUNT(*) FROM alert_actions;")
+    if cursor.fetchone()[0] == 0:
+        cursor.execute("""
+            INSERT INTO alert_actions (alert_id, timestamp, action_type, performed_by, status_after, details, notes)
+            SELECT id, timestamp, 'CREATED', 'MachineSimulator', status,
+                   'Incident condition logged: ' || message, 'Automated condition detection'
+            FROM alerts;
+        """)
+        cursor.execute("""
+            INSERT INTO alert_actions (alert_id, timestamp, action_type, performed_by, status_after, details, notes)
+            SELECT id, COALESCE(acknowledged_at, timestamp), 'ACKNOWLEDGED', 'Plant Operator', status,
+                   'Incident acknowledged by operator', ''
+            FROM alerts WHERE acknowledged = 1;
+        """)
+        cursor.execute("""
+            INSERT INTO alert_actions (alert_id, timestamp, action_type, performed_by, status_after, details, notes)
+            SELECT id, COALESCE(resolved_at, timestamp), 'RESOLVED', 'Maintenance Lead', 'RESOLVED',
+                   'Operating parameters restored to safe nominal baseline', ''
+            FROM alerts WHERE is_active = 0;
+        """)
+
     conn.commit()
 
 
-def init_db():
+def init_db(db_path: Optional[str] = None):
     """Initializes SQLite schema, runs migrations, and creates indexes."""
-    conn = get_connection()
+    conn = get_connection(db_path)
     cursor = conn.cursor()
 
     # 1. Sensor Readings
@@ -395,13 +474,22 @@ def save_alert(
         return alert_id
 
     # No active alert exists, create a new one
+    priority = "HIGH" if severity == "CRITICAL" else ("MEDIUM" if severity == "WARNING" else "LOW")
     cursor.execute("""
         INSERT INTO alerts (
             timestamp, severity, alert_type, message, source,
-            reading_snapshot, acknowledged, is_active, last_seen_at, occurrence_count, is_test, is_demo
-        ) VALUES (?, ?, ?, ?, ?, ?, 0, 1, ?, 1, ?, ?);
-    """, (now_str, severity, alert_type, message, source, snapshot_str, now_str, is_test, is_demo))
+            reading_snapshot, acknowledged, is_active, last_seen_at, occurrence_count, is_test, is_demo,
+            status, priority
+        ) VALUES (?, ?, ?, ?, ?, ?, 0, 1, ?, 1, ?, ?, 'NEW', ?);
+    """, (now_str, severity, alert_type, message, source, snapshot_str, now_str, is_test, is_demo, priority))
     alert_id = cursor.lastrowid
+
+    # Record CREATED event in alert_actions
+    cursor.execute("""
+        INSERT INTO alert_actions (alert_id, timestamp, action_type, performed_by, status_after, details, notes)
+        VALUES (?, ?, 'CREATED', 'MachineSimulator', 'NEW', ?, 'System generated telemetry event');
+    """, (alert_id, now_str, f"Incident logged: {message}"))
+
     conn.commit()
     conn.close()
     return alert_id
@@ -414,11 +502,24 @@ def resolve_alert(alert_type: str, source: str) -> int:
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     cursor.execute("""
+        SELECT id FROM alerts
+        WHERE alert_type = ? AND source = ? AND is_active = 1;
+    """, (alert_type, source))
+    active_ids = [row["id"] for row in cursor.fetchall()]
+
+    cursor.execute("""
         UPDATE alerts
-        SET is_active = 0, resolved_at = ?
+        SET is_active = 0, resolved_at = ?, status = 'RESOLVED'
         WHERE alert_type = ? AND source = ? AND is_active = 1;
     """, (now_str, alert_type, source))
     affected = cursor.rowcount
+
+    for aid in active_ids:
+        cursor.execute("""
+            INSERT INTO alert_actions (alert_id, timestamp, action_type, performed_by, status_after, details, notes)
+            VALUES (?, ?, 'RESOLVED', 'MachineSimulator', 'RESOLVED', 'Condition returned to safe operational bounds', 'Automatic simulator state resolution');
+        """, (aid, now_str))
+
     conn.commit()
     conn.close()
     return affected
@@ -426,6 +527,10 @@ def resolve_alert(alert_type: str, source: str) -> int:
 
 def get_alerts(
     severity: Optional[str] = None,
+    status: Optional[str] = None,
+    assigned: Optional[str] = None,
+    team: Optional[str] = None,
+    search: Optional[str] = None,
     acknowledged: Optional[int] = None,
     is_active: Optional[int] = None,
     limit: int = 50,
@@ -443,6 +548,25 @@ def get_alerts(
     if severity and severity.upper() != "ALL":
         query += " AND severity = ?"
         params.append(severity.upper())
+
+    if status and status.upper() != "ALL":
+        query += " AND status = ?"
+        params.append(status.upper())
+
+    if assigned:
+        if assigned.upper() == "ASSIGNED":
+            query += " AND (assigned_team IS NOT NULL AND assigned_team != '')"
+        elif assigned.upper() == "UNASSIGNED":
+            query += " AND (assigned_team IS NULL OR assigned_team = '')"
+
+    if team and team.upper() != "ALL":
+        query += " AND assigned_team = ?"
+        params.append(team)
+
+    if search and search.strip():
+        term = f"%{search.strip()}%"
+        query += " AND (message LIKE ? OR alert_type LIKE ? OR assigned_person LIKE ? OR assigned_team LIKE ?)"
+        params.extend([term, term, term, term])
 
     if acknowledged is not None:
         query += " AND acknowledged = ?"
@@ -486,8 +610,17 @@ def get_alert_summary(include_test: bool = False) -> Dict[str, int]:
     cursor.execute(f"SELECT COUNT(*) FROM alerts {test_filter} AND is_active = 1 AND severity = 'WARNING';")
     active_warning = cursor.fetchone()[0]
 
-    cursor.execute(f"SELECT COUNT(*) FROM alerts {test_filter} AND is_active = 0;")
+    cursor.execute(f"SELECT COUNT(*) FROM alerts {test_filter} AND (status = 'RESOLVED' OR is_active = 0);")
     resolved = cursor.fetchone()[0]
+
+    cursor.execute(f"SELECT COUNT(*) FROM alerts {test_filter} AND (status = 'NEW' OR (status IS NULL AND acknowledged = 0 AND is_active = 1));")
+    new_alerts = cursor.fetchone()[0]
+
+    cursor.execute(f"SELECT COUNT(*) FROM alerts {test_filter} AND status = 'ASSIGNED';")
+    assigned_alerts = cursor.fetchone()[0]
+
+    cursor.execute(f"SELECT COUNT(*) FROM alerts {test_filter} AND status = 'IN_PROGRESS';")
+    in_progress_alerts = cursor.fetchone()[0]
 
     cursor.execute(f"SELECT COUNT(*) FROM alerts {test_filter} AND acknowledged = 0 AND is_active = 1;")
     unacknowledged = cursor.fetchone()[0]
@@ -498,7 +631,10 @@ def get_alert_summary(include_test: bool = False) -> Dict[str, int]:
         "active_critical": active_critical,
         "active_warning": active_warning,
         "resolved": resolved,
-        "unacknowledged": unacknowledged
+        "unacknowledged": unacknowledged,
+        "new_alerts": new_alerts,
+        "assigned_alerts": assigned_alerts,
+        "in_progress_alerts": in_progress_alerts
     }
 
 
@@ -508,13 +644,264 @@ def acknowledge_alert(alert_id: int) -> bool:
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     cursor.execute("""
         UPDATE alerts
-        SET acknowledged = 1, acknowledged_at = ?
+        SET acknowledged = 1, acknowledged_at = ?,
+            status = CASE WHEN status = 'NEW' THEN 'ASSIGNED' ELSE status END
         WHERE id = ?;
     """, (now_str, alert_id))
     affected = cursor.rowcount > 0
+    if affected:
+        cursor.execute("""
+            INSERT INTO alert_actions (alert_id, timestamp, action_type, performed_by, status_after, details, notes)
+            VALUES (?, ?, 'ACKNOWLEDGED', 'Operator', (SELECT status FROM alerts WHERE id = ?), 'Alert acknowledged by operator', '');
+        """, (alert_id, now_str, alert_id))
     conn.commit()
     conn.close()
     return affected
+
+
+def get_alert_by_id(alert_id: int) -> Optional[Dict[str, Any]]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM alerts WHERE id = ?;", (alert_id,))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        return None
+
+    item = dict(row)
+    if item.get("reading_snapshot"):
+        try:
+            item["reading_snapshot"] = json.loads(item["reading_snapshot"])
+        except Exception:
+            pass
+
+    cursor.execute("""
+        SELECT * FROM alert_actions
+        WHERE alert_id = ?
+        ORDER BY id ASC;
+    """, (alert_id,))
+    history_rows = cursor.fetchall()
+    item["history"] = [dict(h) for h in history_rows]
+
+    conn.close()
+    return item
+
+
+def get_alert_history(alert_id: int) -> List[Dict[str, Any]]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT * FROM alert_actions
+        WHERE alert_id = ?
+        ORDER BY id ASC;
+    """, (alert_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def assign_alert(
+    alert_id: int,
+    assigned_team: str,
+    assigned_person: str,
+    priority: str = "MEDIUM",
+    notes: Optional[str] = None
+) -> Optional[Dict[str, Any]]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    clean_team = (assigned_team or "").strip()
+    clean_person = (assigned_person or "").strip()
+    clean_priority = (priority or "MEDIUM").upper().strip()
+    clean_notes = (notes or "").strip()
+
+    cursor.execute("""
+        UPDATE alerts
+        SET assigned_team = ?,
+            assigned_person = ?,
+            priority = ?,
+            assignment_notes = ?,
+            assigned_at = ?,
+            status = CASE WHEN status = 'NEW' THEN 'ASSIGNED' ELSE status END
+        WHERE id = ?;
+    """, (clean_team, clean_person, clean_priority, clean_notes, now_str, alert_id))
+
+    if cursor.rowcount == 0:
+        conn.close()
+        return None
+
+    cursor.execute("SELECT status FROM alerts WHERE id = ?;", (alert_id,))
+    status_row = cursor.fetchone()
+    status_after = status_row["status"] if status_row else "ASSIGNED"
+
+    cursor.execute("""
+        INSERT INTO alert_actions (alert_id, timestamp, action_type, performed_by, status_after, details, notes)
+        VALUES (?, ?, 'ASSIGNED', ?, ?, ?, ?);
+    """, (
+        alert_id,
+        now_str,
+        clean_person or "Plant Supervisor",
+        status_after,
+        f"Assigned to {clean_team} ({clean_person}) with {clean_priority} priority.",
+        clean_notes
+    ))
+
+    conn.commit()
+    conn.close()
+    return get_alert_by_id(alert_id)
+
+
+def update_alert_status(
+    alert_id: int,
+    new_status: str,
+    performed_by: str = "Plant Operator",
+    notes: Optional[str] = None
+) -> Optional[Dict[str, Any]]:
+    valid_statuses = ["NEW", "ASSIGNED", "IN_PROGRESS", "RESOLVED"]
+    clean_status = (new_status or "").upper().strip()
+    if clean_status not in valid_statuses:
+        raise ValueError(f"Invalid status '{new_status}'. Allowed statuses are: {', '.join(valid_statuses)}")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    resolved_at = now_str if clean_status == "RESOLVED" else None
+
+    if clean_status == "RESOLVED":
+        cursor.execute("""
+            UPDATE alerts
+            SET status = ?, is_active = 0, resolved_at = ?
+            WHERE id = ?;
+        """, (clean_status, resolved_at, alert_id))
+    else:
+        cursor.execute("""
+            UPDATE alerts
+            SET status = ?, is_active = 1
+            WHERE id = ?;
+        """, (clean_status, alert_id))
+
+    if cursor.rowcount == 0:
+        conn.close()
+        return None
+
+    clean_performed_by = (performed_by or "Plant Operator").strip()
+    clean_notes = (notes or "").strip()
+
+    cursor.execute("""
+        INSERT INTO alert_actions (alert_id, timestamp, action_type, performed_by, status_after, details, notes)
+        VALUES (?, ?, 'STATUS_CHANGE', ?, ?, ?, ?);
+    """, (
+        alert_id,
+        now_str,
+        clean_performed_by,
+        clean_status,
+        f"Status changed to {clean_status}.",
+        clean_notes
+    ))
+
+    conn.commit()
+    conn.close()
+    return get_alert_by_id(alert_id)
+
+
+def record_alert_action(
+    alert_id: int,
+    action_performed: str,
+    diagnosis: Optional[str],
+    technician_notes: str,
+    performed_by: str,
+    status_after: Optional[str] = "IN_PROGRESS"
+) -> Optional[Dict[str, Any]]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    clean_action = (action_performed or "").strip()
+    clean_diagnosis = (diagnosis or "").strip()
+    clean_notes = (technician_notes or "").strip()
+    clean_by = (performed_by or "Technician").strip()
+    clean_status = (status_after or "IN_PROGRESS").upper().strip()
+
+    cursor.execute("""
+        UPDATE alerts
+        SET status = ?
+        WHERE id = ?;
+    """, (clean_status, alert_id))
+
+    if cursor.rowcount == 0:
+        conn.close()
+        return None
+
+    diag_text = f" Diagnosis: {clean_diagnosis}" if clean_diagnosis else ""
+    cursor.execute("""
+        INSERT INTO alert_actions (alert_id, timestamp, action_type, performed_by, status_after, details, notes)
+        VALUES (?, ?, 'ACTION_TAKEN', ?, ?, ?, ?);
+    """, (
+        alert_id,
+        now_str,
+        clean_by,
+        clean_status,
+        f"Action: {clean_action}.{diag_text}",
+        clean_notes
+    ))
+
+    conn.commit()
+    conn.close()
+    return get_alert_by_id(alert_id)
+
+
+def resolve_alert_record(
+    alert_id: int,
+    resolution_notes: str,
+    resolution_category: str,
+    resolved_by: str,
+    follow_up: Optional[str] = None
+) -> Optional[Dict[str, Any]]:
+    if not resolution_notes or not resolution_notes.strip():
+        raise ValueError("Resolution notes are mandatory when resolving an incident.")
+    if not resolved_by or not resolved_by.strip():
+        raise ValueError("Resolved by (technician name) is mandatory.")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    clean_notes = resolution_notes.strip()
+    clean_cat = (resolution_category or "MAINTENANCE_RESOLUTION").upper().strip()
+    clean_by = resolved_by.strip()
+    clean_followup = (follow_up or "").strip()
+
+    cursor.execute("""
+        UPDATE alerts
+        SET status = 'RESOLVED',
+            is_active = 0,
+            resolved_at = ?,
+            resolution_notes = ?,
+            resolution_category = ?,
+            resolved_by = ?
+        WHERE id = ?;
+    """, (now_str, clean_notes, clean_cat, clean_by, alert_id))
+
+    if cursor.rowcount == 0:
+        conn.close()
+        return None
+
+    cursor.execute("""
+        INSERT INTO alert_actions (alert_id, timestamp, action_type, performed_by, status_after, details, notes)
+        VALUES (?, ?, 'RESOLVED', ?, 'RESOLVED', ?, ?);
+    """, (
+        alert_id,
+        now_str,
+        clean_by,
+        f"Incident resolved [{clean_cat}]: {clean_notes}",
+        clean_followup
+    ))
+
+    conn.commit()
+    conn.close()
+    return get_alert_by_id(alert_id)
 
 
 # ==============================================================================
